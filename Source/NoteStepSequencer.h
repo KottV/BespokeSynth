@@ -23,8 +23,7 @@
 //
 //
 
-#ifndef __modularSynth__NoteStepSequencer__
-#define __modularSynth__NoteStepSequencer__
+#pragma once
 
 #include <iostream>
 #include "INoteReceiver.h"
@@ -141,6 +140,8 @@ private:
    float ExtraWidth() const;
    float ExtraHeight() const;
    void RandomizePitches(bool fifths);
+   void RandomizeVelocities();
+   void RandomizeLengths();
    void Step(double time, float velocity, int pulseFlags);
    void SendNoteToCable(int index, double time, int pitch, int velocity);
 
@@ -160,14 +161,11 @@ private:
    int mArpIndex{ -1 };
 
    DropdownList* mIntervalSelector{ nullptr };
-   Checkbox* mRepeatIsHoldCheckbox{ nullptr };
    UIGrid* mGrid{ nullptr };
    UIGrid* mVelocityGrid{ nullptr };
    int mLastPitch{ -1 };
-   int mLastVel{ 0 };
    int mLastStepIndex{ -1 };
    float mLastNoteLength{ 1 };
-   double mLastNoteStartTime{ 0 };
    double mLastNoteEndTime{ 0 };
    bool mAlreadyDidNoteOff{ false };
    int mOctave{ 3 };
@@ -176,6 +174,7 @@ private:
    DropdownList* mNoteModeSelector{ nullptr };
    IntSlider* mLoopResetPointSlider{ nullptr };
    int mLoopResetPoint{ 0 };
+   int mStepLengthSubdivisions{ 2 };
 
    int mLength{ 8 };
    IntSlider* mLengthSlider{ nullptr };
@@ -190,6 +189,7 @@ private:
    ClickButton* mShiftForwardButton{ nullptr };
    ClickButton* mClearButton{ nullptr };
 
+   ClickButton* mRandomizeAllButton{ nullptr };
    ClickButton* mRandomizePitchButton{ nullptr };
    ClickButton* mRandomizeLengthButton{ nullptr };
    ClickButton* mRandomizeVelocityButton{ nullptr };
@@ -222,6 +222,3 @@ private:
    IntSlider* mGridControlOffsetXSlider{ nullptr };
    IntSlider* mGridControlOffsetYSlider{ nullptr };
 };
-
-
-#endif /* defined(__modularSynth__NoteStepSequencer__) */

@@ -171,7 +171,7 @@ void FloatSlider::Render()
    {
       ofPushStyle();
       if (*mVar >= mMin && *mVar <= mMax)
-         ofSetColor(255, 0, 0, gModuleDrawAlpha);
+         ofSetColor(0, 127, 127, gModuleDrawAlpha);
       else
          ofSetColor(30, 30, 30, gModuleDrawAlpha);
       if (showSmoothAdjustmentUI)

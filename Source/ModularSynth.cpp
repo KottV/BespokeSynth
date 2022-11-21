@@ -265,7 +265,15 @@ void ModularSynth::Setup(juce::AudioDeviceManager* globalAudioDeviceManager, juc
    sBackgroundR = UserPrefs.background_r.Get();
    sBackgroundG = UserPrefs.background_g.Get();
    sBackgroundB = UserPrefs.background_b.Get();
-
+   IDrawableModule::sHueNote = UserPrefs.sHueNote.Get();
+   IDrawableModule::sHueAudio = UserPrefs.sHueAudio.Get();
+   IDrawableModule::sHueInstrument = UserPrefs.sHueInstrument.Get();
+   IDrawableModule::sHueNoteSource = UserPrefs.sHueNoteSource.Get();
+   IDrawableModule::sHueProcessor = UserPrefs.sHueProcessor.Get();
+   IDrawableModule::sHueModulator = UserPrefs.sHueModulator.Get();
+   IDrawableModule::sHuePulse = UserPrefs.sHuePulse.Get();
+   IDrawableModule::sSaturation = UserPrefs.sSaturation.Get();
+   IDrawableModule::sBrightness = UserPrefs.sBrightness.Get();
    Time time = Time::getCurrentTime();
    if (fabsf(sBackgroundR - UserPrefs.background_r.GetDefault()) < .001f && fabsf(sBackgroundG - UserPrefs.background_g.GetDefault()) < .001f && fabsf(sBackgroundB - UserPrefs.background_b.GetDefault()) < .001f && time.getMonth() + 1 == 10 && time.getDayOfMonth() == 31)
    {

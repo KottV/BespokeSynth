@@ -28,6 +28,7 @@
 #include "UserPrefsEditor.h"
 #include "ModularSynth.h"
 #include "SynthGlobals.h"
+#include "IDrawableModule.h"
 #include "UserPrefs.h"
 
 #include "juce_audio_devices/juce_audio_devices.h"
@@ -413,6 +414,21 @@ void UserPrefsEditor::FloatSliderUpdated(FloatSlider* slider, float oldVal, doub
          ModularSynth::sBackgroundG = UserPrefs.background_g.Get();
          ModularSynth::sBackgroundB = UserPrefs.background_b.Get();
       }
+      if (slider == UserPrefs.sHueNote.GetSlider() || UserPrefs.sHueAudio.GetSlider() || UserPrefs.sHueInstrument.GetSlider() || UserPrefs.sHueNoteSource.GetSlider() 
+          || UserPrefs.sSaturation.GetSlider() || UserPrefs.sBrightness.GetSlider() || UserPrefs.sHueProcessor.GetSlider() || UserPrefs.sHueModulator.GetSlider() || UserPrefs.sHuePulse.GetSlider())
+      {
+         IDrawableModule::sHueNote = UserPrefs.sHueNote.Get();
+         IDrawableModule::sHueAudio = UserPrefs.sHueAudio.Get();
+         IDrawableModule::sHueInstrument = UserPrefs.sHueInstrument.Get();
+         IDrawableModule::sHueNoteSource = UserPrefs.sHueNoteSource.Get();
+         IDrawableModule::sHueProcessor = UserPrefs.sHueProcessor.Get();
+         IDrawableModule::sHueModulator = UserPrefs.sHueModulator.Get();
+         IDrawableModule::sHuePulse = UserPrefs.sHuePulse.Get();
+         IDrawableModule::sSaturation = UserPrefs.sSaturation.Get();
+         IDrawableModule::sBrightness = UserPrefs.sBrightness.Get();
+      }
+      if (slider == UserPrefs.corner_roundness.GetSlider())
+         gCornerRoundness = UserPrefs.corner_roundness.Get();
    }
 }
 

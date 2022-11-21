@@ -76,7 +76,7 @@ IUIControl* gHotBindUIControl[10];
 float gControlTactileFeedback = 0;
 float gDrawScale = 1;
 bool gShowDevModules = false;
-float gCornerRoundness = 1;
+float gCornerRoundness = UserPrefs.corner_roundness.Get();
 
 std::random_device gRandomDevice;
 bespoke::core::Xoshiro256ss gRandom(gRandomDevice);

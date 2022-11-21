@@ -339,6 +339,16 @@ public:
 #endif
       -100, 100, 5, UserPrefCategory::Graphics
    };
+   UserPrefFloat corner_roundness{ "corner roundness", 1.f, 0.f, 1.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueNote{ "hue_note_effect", 27.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueAudio{ "hue_audio_effects", 35.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueInstrument{ "hue_synths_plugins", 94.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueNoteSource{ "hue_instruments", 222.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueProcessor{ "hue_processor", 200.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueModulator{ "hue_modulator", 170.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHuePulse{ "hue_pulse", 43.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sSaturation{ "modules_saturation", 92.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sBrightness{ "modules_brightness", 220.f, 0.f, 255.f, UserPrefCategory::Graphics };
 
    UserPrefString recordings_path{ "recordings_path", "recordings/", 70, UserPrefCategory::Paths };
    UserPrefString tooltips{ "tooltips", "tooltips_eng.txt", 70, UserPrefCategory::Paths };

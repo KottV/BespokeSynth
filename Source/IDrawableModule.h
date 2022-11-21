@@ -190,12 +190,15 @@ public:
 
    static void FindClosestSides(float xThis, float yThis, float wThis, float hThis, float xThat, float yThat, float wThat, float hThat, float& startX, float& startY, float& endX, float& endY, bool sidesOnly = false);
 
-   static float sHueNote;
-   static float sHueAudio;
-   static float sHueInstrument;
-   static float sHueNoteSource;
-   static float sSaturation;
-   static float sBrightness;
+  static float sHueNote;
+  static float sHueAudio;
+  static float sHueInstrument;
+  static float sHueNoteSource;
+  static float sHueModulator;
+  static float sHueProcessor;
+  static float sHuePulse;
+  static float sSaturation;
+  static float sBrightness;
 
    bool mDrawDebug{ false };
 

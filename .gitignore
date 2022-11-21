@@ -403,3 +403,4 @@ run_cmake*.bat
 run_cmake*.sh
 
 scripts/installer_macOS/Bespoke-Mac.dmg
+/CMakeSettings.json

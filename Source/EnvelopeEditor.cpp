@@ -52,7 +52,7 @@ void EnvelopeControl::Draw()
    ofSetLineWidth(.5f);
    ofRect(mPosition.x, mPosition.y, mDimensions.x, mDimensions.y, 0);
 
-   ofSetColor(245, 58, 0, gModuleDrawAlpha);
+   ofSetColor(0, 127, 127, gModuleDrawAlpha);
 
    mViewAdsr.Set(*mAdsr);
    mViewAdsr.Clear();

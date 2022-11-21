@@ -52,8 +52,13 @@ float IDrawableModule::sHueNote = 27;
 float IDrawableModule::sHueAudio = 135;
 float IDrawableModule::sHueInstrument = 79;
 float IDrawableModule::sHueNoteSource = 240;
+float IDrawableModule::sHueModulator = 170;
+float IDrawableModule::sHueProcessor = 200;
+float IDrawableModule::sHuePulse = 43;
 float IDrawableModule::sSaturation = 145;
 float IDrawableModule::sBrightness = 220;
+
+
 
 IDrawableModule::IDrawableModule()
 {
@@ -139,6 +144,7 @@ void IDrawableModule::Init()
          continue; //stuff in module containers was already initialized
       mChildren[i]->Init();
    }
+
 }
 
 void IDrawableModule::BasePoll()
@@ -464,11 +470,11 @@ ofColor IDrawableModule::GetColor(ModuleCategory type)
    if (type == kModuleCategory_Instrument)
       color.setHsb(sHueNoteSource, sSaturation, sBrightness);
    if (type == kModuleCategory_Processor)
-      color.setHsb(170, 100, 255);
+      color.setHsb(sHueProcessor, sSaturation, sBrightness);
    if (type == kModuleCategory_Modulator)
-      color.setHsb(200, 100, 255);
+      color.setHsb(sHueModulator, sSaturation, sBrightness);
    if (type == kModuleCategory_Pulse)
-      color.setHsb(43, sSaturation, sBrightness);
+      color.setHsb(sHuePulse, sSaturation, sBrightness);
    return color;
 }
 

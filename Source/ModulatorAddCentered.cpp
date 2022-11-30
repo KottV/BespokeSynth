@@ -65,7 +65,7 @@ void ModulatorAddCentered::PostRepatch(PatchCableSource* cableSource, bool fromU
 {
    OnModulatorRepatch();
 
-   if (GetSliderTarget())
+   if (GetSliderTarget() && fromUserClick)
    {
       mValue1 = GetSliderTarget()->GetValue();
       mValue2 = 0;
@@ -86,7 +86,6 @@ float ModulatorAddCentered::Value(int samplesIn)
 
 void ModulatorAddCentered::SaveLayout(ofxJSONElement& moduleInfo)
 {
-   IDrawableModule::SaveLayout(moduleInfo);
 }
 
 void ModulatorAddCentered::LoadLayout(const ofxJSONElement& moduleInfo)

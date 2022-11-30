@@ -716,6 +716,13 @@ PYBIND11_EMBEDDED_MODULE(module, m)
       {
          module.SetTarget(target);
       })
+      .def("set_target", [](IDrawableModule& module, std::string targetPath)
+      {
+         IClickable* target = TheSynth->FindModule(targetPath);
+         if (target == nullptr)
+            target = TheSynth->FindUIControl(targetPath);
+         module.SetTarget(target);
+      })
       .def("get_target", [](IDrawableModule& module)
       {
          auto* cable = module.GetPatchCableSource();
@@ -745,7 +752,7 @@ PYBIND11_EMBEDDED_MODULE(module, m)
       })
       .def("delete", [](IDrawableModule& module)
       {
-         module.GetOwningContainer()->DeleteModule(&module);
+         module.GetOwningContainer()->DeleteModule(&module, !K(fail));
       })
       .def("set", [](IDrawableModule& module, std::string path, float value)
       {

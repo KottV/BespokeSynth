@@ -76,7 +76,7 @@ void ModulatorAccum::PostRepatch(PatchCableSource* cableSource, bool fromUserCli
 {
    OnModulatorRepatch();
 
-   if (GetSliderTarget())
+   if (GetSliderTarget() && fromUserClick)
    {
       mValue = GetSliderTarget()->GetValue();
       mValueSlider->SetExtents(GetSliderTarget()->GetMin(), GetSliderTarget()->GetMax());
@@ -101,7 +101,6 @@ float ModulatorAccum::Value(int samplesIn)
 
 void ModulatorAccum::SaveLayout(ofxJSONElement& moduleInfo)
 {
-   IDrawableModule::SaveLayout(moduleInfo);
 }
 
 void ModulatorAccum::LoadLayout(const ofxJSONElement& moduleInfo)

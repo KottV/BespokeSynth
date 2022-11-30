@@ -73,7 +73,7 @@ void ModulatorSmoother::PostRepatch(PatchCableSource* cableSource, bool fromUser
 {
    OnModulatorRepatch();
 
-   if (GetSliderTarget())
+   if (GetSliderTarget() && fromUserClick)
    {
       mInput = GetSliderTarget()->GetValue();
       mInputSlider->SetExtents(GetSliderTarget()->GetMin(), GetSliderTarget()->GetMax());
@@ -94,7 +94,6 @@ float ModulatorSmoother::Value(int samplesIn)
 
 void ModulatorSmoother::SaveLayout(ofxJSONElement& moduleInfo)
 {
-   IDrawableModule::SaveLayout(moduleInfo);
 }
 
 void ModulatorSmoother::LoadLayout(const ofxJSONElement& moduleInfo)

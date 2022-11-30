@@ -77,7 +77,7 @@ void ModulatorCurve::PostRepatch(PatchCableSource* cableSource, bool fromUserCli
 {
    OnModulatorRepatch();
 
-   if (GetSliderTarget())
+   if (GetSliderTarget() && fromUserClick)
       mInput = GetSliderTarget()->GetValue();
 }
 
@@ -118,7 +118,6 @@ bool ModulatorCurve::MouseMoved(float x, float y)
 
 void ModulatorCurve::SaveLayout(ofxJSONElement& moduleInfo)
 {
-   IDrawableModule::SaveLayout(moduleInfo);
 }
 
 void ModulatorCurve::LoadLayout(const ofxJSONElement& moduleInfo)

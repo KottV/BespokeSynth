@@ -427,13 +427,13 @@ void UserPrefsEditor::FloatSliderUpdated(FloatSlider* slider, float oldVal, doub
          IDrawableModule::sSaturation = UserPrefs.sSaturation.Get();
          IDrawableModule::sBrightness = UserPrefs.sBrightness.Get();
       }
-      if (slider == UserPrefs.corner_roundness.GetSlider())
-         gCornerRoundness = UserPrefs.corner_roundness.Get();
    }
 }
 
 void UserPrefsEditor::IntSliderUpdated(IntSlider* slider, int oldVal, double time)
 {
+   if (slider == UserPrefs.corner_roundness.GetSlider())
+      gCornerRoundness = static_cast<float>(UserPrefs.corner_roundness.Get()) / 10.f;
 }
 
 void UserPrefsEditor::TextEntryComplete(TextEntry* entry)

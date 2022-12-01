@@ -328,3 +328,43 @@ bool UserPrefFloat::DiffersFromSavedValue() const
       return mValue != mDefault;
    return mValue != UserPrefs.mUserPrefsFile[mName].asFloat();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void UserPrefInt::Init()
+{
+   try
+   {
+      if (!UserPrefs.mUserPrefsFile[mName].isNull())
+         mValue = UserPrefs.mUserPrefsFile[mName].asInt();
+   }
+   catch (Json::LogicError& e)
+   {
+      TheSynth->LogEvent("json error loading userpref for " + mName + ": " + e.what(), kLogEventType_Error);
+      UserPrefs.mUserPrefsFile[mName] = mDefault;
+   }
+}
+
+void UserPrefInt::SetUpControl(IDrawableModule* owner)
+{
+   mSlider = new IntSlider(dynamic_cast<IIntSliderListener*>(owner), mName.c_str(), -1, -1, 200, 15, &mValue, mMin, mMax);
+   mSlider->SetShowName(false);
+}
+
+IUIControl* UserPrefInt::GetControl()
+{
+   return mSlider;
+}
+
+void UserPrefInt::Save(int index, ofxJSONElement& prefsJson) //this numbering is a silly markup hack to get the json file to save ordered
+{
+   prefsJson.removeMember(mName);
+   prefsJson["**" + UserPrefsHolder::ToStringLeadingZeroes(index) + "**" + mName] = mValue;
+}
+
+bool UserPrefInt::DiffersFromSavedValue() const
+{
+   if (UserPrefs.mUserPrefsFile[mName].isNull())
+      return mValue != mDefault;
+   return mValue != UserPrefs.mUserPrefsFile[mName].asInt();
+}

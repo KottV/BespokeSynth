@@ -91,7 +91,8 @@ void ADSRDisplay::Render()
 
    if (mAdsr && sDisplayMode == kDisplayEnvelope)
    {
-      ofSetColor(0, 127, 127, gModuleDrawAlpha);
+      //ofSetColor(0, 127, 127, gModuleDrawAlpha);
+      ofSetColor(IDrawableModule::GetColor(GetModuleParent()->GetModuleCategory()), gModuleDrawAlpha * 2.f);
       ofSetLineWidth(1);
 
       ofBeginShape();

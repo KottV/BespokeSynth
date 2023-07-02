@@ -41,7 +41,7 @@
 
 class ofxJSONElement;
 
-#define MAX_SAMPLER_LENGTH 2 * gSampleRate
+#define MAX_SAMPLER_LENGTH 2 * 48000
 
 class Sampler : public IAudioProcessor, public INoteReceiver, public IDrawableModule, public IDropdownListener, public IFloatSliderListener, public IIntSliderListener
 {
@@ -49,7 +49,9 @@ public:
    Sampler();
    ~Sampler();
    static IDrawableModule* Create() { return new Sampler(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -79,7 +81,9 @@ public:
    void SetUpFromSaveData() override;
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, int rev) override;
-   int GetModuleSaveStateRev() const override { return 1; }
+   int GetModuleSaveStateRev() const override { return 2; }
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    void StopRecording();
@@ -88,8 +92,6 @@ private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return mEnabled; }
-
 
    PolyphonyMgr mPolyMgr;
    NoteInputBuffer mNoteInputBuffer;

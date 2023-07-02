@@ -38,7 +38,9 @@ class Monophonify : public NoteEffectBase, public IDrawableModule, public IFloat
 public:
    Monophonify();
    static IDrawableModule* Create() { return new Monophonify(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -54,6 +56,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -62,7 +66,6 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
    int GetMostRecentCurrentlyHeldPitch() const;
 
    double mHeldNotes[128];
@@ -84,7 +87,7 @@ private:
    DropdownList* mPortamentoModeSelector{ nullptr };
    float mGlideTime{ 0 };
    FloatSlider* mGlideSlider{ nullptr };
-   ModulationChain mPitchBend;
+   ModulationChain mPitchBend{ 0 };
 };
 
 

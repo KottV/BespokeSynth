@@ -41,6 +41,7 @@ ModulatorCurve::ModulatorCurve()
    mEnvelopeControl.SetADSR(&mAdsr);
    mEnvelopeControl.SetViewLength(kAdsrTime);
    mEnvelopeControl.SetFixedLengthMode(true);
+   mAdsr.GetFreeReleaseLevel() = true;
    mAdsr.SetNumStages(2);
    mAdsr.GetHasSustainStage() = false;
    mAdsr.GetStageData(0).target = 0;
@@ -84,10 +85,8 @@ void ModulatorCurve::PostRepatch(PatchCableSource* cableSource, bool fromUserCli
 float ModulatorCurve::Value(int samplesIn)
 {
    ComputeSliders(samplesIn);
-   mAdsr.Clear();
-   mAdsr.Start(0, 1);
-   mAdsr.Stop(kAdsrTime);
-   float val = ofClamp(mAdsr.Value(mInput * kAdsrTime), 0, 1);
+   ADSR::EventInfo adsrEvent(0, kAdsrTime);
+   float val = ofClamp(mAdsr.Value(mInput * kAdsrTime, &adsrEvent), 0, 1);
    if (val != val)
       val = 0;
    return ofLerp(GetMin(), GetMax(), val);

@@ -3,6 +3,8 @@
 # Bespoke Synth
 A software modular synth that I've been building for myself since 2011, and now you can use it!
 
+[Nightly Build](https://github.com/BespokeSynth/BespokeSynth/releases/tag/Nightly) (updated every commit)
+
 You can find the most recent builds for Mac/Windows/Linux at http://bespokesynth.com, or in the [Releases](https://github.com/BespokeSynth/BespokeSynth/releases) section on GitHub.
 
 Join the [Bespoke Discord](https://discord.gg/YdTMkvvpZZ) for support and to discuss with the community.
@@ -22,10 +24,14 @@ Find searchable, community-written documentation here! https://bespokesynth.gith
 
 ### Features
 * live-patchable environment, so you can build while the music is playing
-* VST hosting
+* VST, VST3, LV2 hosting
 * Python livecoding
-* MIDI controller mapping
+* MIDI & OSC controller mapping
 * Works on Windows, Mac, and Linux
+
+### License
+
+[GNU GPL v3](LICENSE)
 
 ### Releases
 Sign up here to receive an email whenever I put out a new release: http://bespokesynth.substack.com/
@@ -73,5 +79,3 @@ To be able to build you will need a few things, depending on your OS
 * On MacOS: install xcode; install xcode command line tools with `xcode-select --install` and install cmake with `brew install cmake` if you use homebrew or from cmake.org if not
 * On Linux you probably already have everything (gcc, git, etc...), but you will need to install required packages. The full list we
 install on a fresh ubuntu 20 box are listed in the azure-pipelines.yml
-
-<a rel="me" href="https://post.lurk.org/@awwbees">.</a>

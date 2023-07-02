@@ -40,6 +40,9 @@ public:
    Prefab();
    ~Prefab();
    static IDrawableModule* Create() { return new Prefab(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    std::string GetTitleLabel() const override;
    void CreateUIControls() override;
@@ -67,16 +70,18 @@ public:
    static bool sLastLoadWasPrefab;
    static IDrawableModule* sJustReleasedModule;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
    void DrawModuleUnclipped() override;
-   bool Enabled() const override { return mEnabled; }
    void GetModuleDimensions(float& width, float& height) override;
    void OnClicked(float x, float y, bool right) override;
    void MouseReleased() override;
 
    bool CanAddDropModules();
+   bool IsAddableModule(IDrawableModule* module);
    bool IsMouseHovered();
 
    void SavePrefab(std::string savePath);

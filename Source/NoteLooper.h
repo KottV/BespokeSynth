@@ -44,13 +44,19 @@ public:
    NoteLooper();
    ~NoteLooper();
    static IDrawableModule* Create() { return new NoteLooper(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
    bool IsResizable() const override { return true; }
    void Resize(float w, float h) override;
+   bool DrawToPush2Screen() override;
+
+   int GetNumMeasures() const { return mNumMeasures; }
+   void SetNumMeasures(int numMeasures);
 
    //INoteReceiver
    void PlayNote(double time, int pitch, int velocity, int voiceIdx = -1, ModulationParameters modulation = ModulationParameters()) override;
@@ -74,10 +80,11 @@ public:
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 0; }
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    double GetCurPos(double time) const;
    NoteCanvasElement* AddNote(double measurePos, int pitch, int velocity, double length, int voiceIdx = -1, ModulationParameters modulation = ModulationParameters());
-   void SetNumMeasures(int numMeasures);
    int GetNewVoice(int voiceIdx);
 
    //IDrawableModule
@@ -87,7 +94,6 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
 
    struct SavedPattern
    {
@@ -112,6 +118,7 @@ private:
    Canvas* mCanvas{ nullptr };
    ClickButton* mClearButton{ nullptr };
    int mVoiceRoundRobin{ kNumVoices - 1 };
+   bool mAllowLookahead{ false };
 
    std::array<ModulationParameters, kNumVoices + 1> mVoiceModulations{};
    std::array<int, kNumVoices> mVoiceMap{};

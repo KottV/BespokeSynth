@@ -42,7 +42,9 @@ public:
    VolcaBeatsControl();
    virtual ~VolcaBeatsControl();
    static IDrawableModule* Create() { return new VolcaBeatsControl(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -56,6 +58,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -64,7 +68,6 @@ private:
       width = 263;
       height = 170;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mClapSpeed{ .5 };
    float mClaveSpeed{ .5 };

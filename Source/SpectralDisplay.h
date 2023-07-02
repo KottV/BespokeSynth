@@ -40,7 +40,9 @@ public:
    SpectralDisplay();
    virtual ~SpectralDisplay();
    static IDrawableModule* Create() { return new SpectralDisplay(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -57,6 +59,8 @@ public:
 
    void FloatSliderUpdated(FloatSlider* slider, float oldVal, double time) override {}
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -65,7 +69,6 @@ private:
       w = mWidth;
       h = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mWidth{ 400 };
    float mHeight{ 100 };

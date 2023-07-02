@@ -140,11 +140,14 @@ public:
       assert(measureStart < measureEnd);
       mLoopStartMeasure = measureStart;
       mLoopEndMeasure = measureEnd;
+      mQueuedMeasure = measureStart;
+      mJumpFromMeasure = measureEnd;
    }
    void ClearLoop()
    {
       mLoopStartMeasure = -1;
       mLoopEndMeasure = -1;
+      mQueuedMeasure = -1;
    }
    void SetQueuedMeasure(double time, int measure);
    bool IsPastQueuedMeasureJump(double time) const;
@@ -175,6 +178,8 @@ public:
    static bool sDoEventLookahead;
    static double sEventEarlyMs;
 
+   bool IsEnabled() const override { return true; }
+
 private:
    void UpdateListeners(double jumpMs);
    double Swing(double measurePos);
@@ -191,7 +196,6 @@ private:
       width = 140;
       height = 100;
    }
-   bool Enabled() const override { return true; }
 
    float mTempo{ 120 };
    int mTimeSigTop{ 4 };
@@ -216,7 +220,7 @@ private:
    int mLoopStartMeasure{ -1 };
    int mLoopEndMeasure{ -1 };
    int mQueuedMeasure{ -1 };
-   int mQueuedMeasureSwitchAtMeasure{ -1 };
+   int mJumpFromMeasure{ -1 };
    bool mWantSetRandomTempo{ false };
 
    std::list<TransportListenerInfo> mListeners;

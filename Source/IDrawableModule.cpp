@@ -40,7 +40,7 @@
 #include "ModuleSaveDataPanel.h"
 #include "GridController.h"
 #include "ControlSequencer.h"
-#include "Presets.h"
+#include "Snapshots.h"
 #include "PatchCableSource.h"
 #include "nanovg/nanovg.h"
 #include "IPulseReceiver.h"
@@ -102,21 +102,26 @@ void IDrawableModule::Init()
    assert(!mInitialized);
    mInitialized = true;
 
-   mModuleCategory = TheSynth->GetModuleFactory()->GetModuleType(mTypeName);
-   if (mModuleCategory == kModuleCategory_Other)
+   ModuleFactory::ModuleInfo moduleInfo = TheSynth->GetModuleFactory()->GetModuleInfo(mTypeName);
+   mModuleCategory = moduleInfo.mCategory;
+   if (mModuleCategory == kModuleCategory_Unknown)
    {
       if (dynamic_cast<IAudioEffect*>(this))
          mModuleCategory = kModuleCategory_Processor;
    }
 
-   mCanReceiveAudio = (dynamic_cast<IAudioReceiver*>(this) != nullptr);
-   mCanReceiveNotes = (dynamic_cast<INoteReceiver*>(this) != nullptr);
-   mCanReceivePulses = (dynamic_cast<IPulseReceiver*>(this) != nullptr);
+   mCanReceiveAudio = moduleInfo.mCanReceiveAudio;
+   mCanReceiveNotes = moduleInfo.mCanReceiveNotes;
+   mCanReceivePulses = moduleInfo.mCanReceivePulses;
 
-   bool wasEnabled = Enabled();
+   assert(mCanReceiveAudio == (dynamic_cast<IAudioReceiver*>(this) != nullptr));
+   assert(mCanReceiveNotes == (dynamic_cast<INoteReceiver*>(this) != nullptr));
+   assert(mCanReceivePulses == (dynamic_cast<IPulseReceiver*>(this) != nullptr));
+
+   bool wasEnabled = IsEnabled();
    bool showEnableToggle = false;
    SetEnabled(!wasEnabled);
-   if (Enabled() == wasEnabled) //nothing changed
+   if (IsEnabled() == wasEnabled) //nothing changed
       showEnableToggle = false; //so don't show toggle, this module doesn't support it
    else
       showEnableToggle = true;
@@ -187,7 +192,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
 
    highlight = 0;
 
-   if (Enabled())
+   if (IsEnabled())
    {
       IAudioSource* audioSource = dynamic_cast<IAudioSource*>(this);
       if (audioSource)
@@ -235,7 +240,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
    }
 
    ofFill();
-   if (Enabled())
+   if (IsEnabled())
       ofSetColor(color.r * (.25f + highlight), color.g * (.25f + highlight), color.b * (.25f + highlight), 210);
    else
       ofSetColor(color.r * .2f, color.g * .2f, color.b * .2f, 120);
@@ -246,7 +251,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
    //gModuleShader.end();
    ofNoFill();
 
-   if (Enabled())
+   if (IsEnabled())
       gModuleDrawAlpha = 255;
    else
       gModuleDrawAlpha = 100;
@@ -324,7 +329,7 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
    }
 
    bool groupSelected = !TheSynth->GetGroupSelectedModules().empty() && VectorContains(this, TheSynth->GetGroupSelectedModules());
-   if ((Enabled() || groupSelected) && mShouldDrawOutline)
+   if ((IsEnabled() || groupSelected || TheSynth->GetMoveModule() == this) && mShouldDrawOutline)
    {
       ofPushStyle();
       ofNoFill();
@@ -334,6 +339,11 @@ void IDrawableModule::DrawFrame(float w, float h, bool drawModule, float& titleB
          float pulse = ofMap(sin(gTime / 500 * PI * 2), -1, 1, .2f, 1);
          ofSetColor(ofLerp(color.r, 255, pulse), ofLerp(color.g, 255, pulse), ofLerp(color.b, 255, pulse), 255);
          ofSetLineWidth(1.5f);
+      }
+      else if (TheSynth->GetMoveModule() == this)
+      {
+         ofSetColor(255, 255, 255);
+         ofSetLineWidth(.5f);
       }
       else
       {
@@ -1043,10 +1053,7 @@ void IDrawableModule::LoadBasics(const ofxJSONElement& moduleInfo, std::string t
 
    SetName(name.c_str());
 
-   SetMinimized(start_minimized);
-
-   if (mMinimized)
-      mMinimizeAnimation = 1;
+   SetMinimized(start_minimized, false);
 
    if (draw_lissajous)
       TheSynth->AddLissajousDrawer(this);
@@ -1125,14 +1132,18 @@ void IDrawableModule::SaveState(FileStreamOut& out)
    }
 
    if (GetContainer())
-      GetContainer()->SaveState(out);
-
-   out << (int)mChildren.size();
-
-   for (auto* child : mChildren)
    {
-      out << std::string(child->Name());
-      child->SaveState(out);
+      GetContainer()->SaveState(out);
+   }
+   else
+   {
+      out << (int)mChildren.size();
+
+      for (auto* child : mChildren)
+      {
+         out << std::string(child->Name());
+         child->SaveState(out);
+      }
    }
 
    if (ShouldSavePatchCableSources())
@@ -1261,18 +1272,21 @@ void IDrawableModule::LoadState(FileStreamIn& in, int rev)
    if (GetContainer())
       GetContainer()->LoadState(in);
 
-   int numChildren;
-   in >> numChildren;
-   LoadStateValidate(numChildren <= mChildren.size());
-
-   for (int i = 0; i < numChildren; ++i)
+   if (!GetContainer() || ModularSynth::sLoadingFileSaveStateRev < 425)
    {
-      std::string childName;
-      in >> childName;
-      //ofLog() << "Loading " << childName;
-      IDrawableModule* child = FindChild(childName.c_str());
-      LoadStateValidate(child);
-      child->LoadState(in, child->LoadModuleSaveStateRev(in));
+      int numChildren;
+      in >> numChildren;
+      LoadStateValidate(numChildren <= mChildren.size());
+
+      for (int i = 0; i < numChildren; ++i)
+      {
+         std::string childName;
+         in >> childName;
+         //ofLog() << "Loading " << childName;
+         IDrawableModule* child = FindChild(childName.c_str());
+         LoadStateValidate(child);
+         child->LoadState(in, child->LoadModuleSaveStateRev(in));
+      }
    }
 
    if (baseRev >= 1)

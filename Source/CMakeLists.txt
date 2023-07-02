@@ -1,6 +1,6 @@
 include(cmake/lib.cmake)
 include(cmake/versiontools.cmake)
-include(../libs/link/AbletonLinkConfig.cmake)
+include(../libs/ableton-link/AbletonLinkConfig.cmake)
 
 juce_add_gui_app(BespokeSynth
     PRODUCT_NAME BespokeSynth
@@ -56,6 +56,8 @@ target_sources(BespokeSynth PRIVATE
     BiquadFilterEffect.h
     BitcrushEffect.cpp
     BitcrushEffect.h
+    BufferShuffler.cpp
+    BufferShuffler.h
     ButterworthFilterEffect.cpp
     ButterworthFilterEffect.h
     Canvas.cpp
@@ -497,8 +499,6 @@ target_sources(BespokeSynth PRIVATE
     Polyrhythms.h
     Prefab.cpp
     Prefab.h
-    Presets.cpp
-    Presets.h
     Pressure.cpp
     Pressure.h
     PressureToCV.cpp
@@ -519,6 +519,10 @@ target_sources(BespokeSynth PRIVATE
     PulseChance.h
     PulseDelayer.cpp
     PulseDelayer.h
+    PulseDisplayer.cpp
+    PulseDisplayer.h
+    PulseFlag.cpp
+    PulseFlag.h
     PulseGate.cpp
     PulseGate.h
     PulseHocket.cpp
@@ -604,6 +608,8 @@ target_sources(BespokeSynth PRIVATE
     SliderSequencer.h
     SlowLayers.cpp
     SlowLayers.h
+    Snapshots.cpp
+    Snapshots.h
     SongBuilder.cpp
     SongBuilder.h
     SpaceMouseControl.cpp

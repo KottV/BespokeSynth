@@ -504,7 +504,6 @@ void SamplePlayer::UpdateSample(Sample* sample, bool ownsSample)
    sample->SetLooping(mLoop);
    sample->SetRate(mSpeed);
    mSample = sample;
-   mVolume = 1;
    mPlay = false;
    mOwnsSample = ownsSample;
    mZoomLevel = 1;
@@ -625,14 +624,14 @@ void SamplePlayer::DownloadYoutube(std::string url, std::string title)
    if (mSample)
       mSample->SetPlayPosition(0);
 
-   const char* tempDownloadName = "youtube.m4a";
+   auto tempDownloadName = ofToString(this) + "_youtube.m4a";
    {
       auto file = juce::File(ofToDataPath(tempDownloadName));
       if (file.existsAsFile())
          file.deleteFile();
    }
 
-   const char* tempConvertedName = "youtube.wav";
+   auto tempConvertedName = ofToString(this) + "_youtube.wav";
    {
       auto file = juce::File(ofToDataPath(tempConvertedName));
       if (file.existsAsFile())
@@ -677,6 +676,10 @@ void SamplePlayer::OnYoutubeDownloadComplete(std::string filename, std::string t
       UpdateSample(new Sample(), true);
       mErrorString = "couldn't download sample. do you have youtube-dl and ffmpeg installed,\nwith their paths set in userprefs.json?";
    }
+
+   auto file = juce::File(ofToDataPath(filename));
+   if (file.existsAsFile())
+      file.deleteFile();
 }
 
 void SamplePlayer::RunProcess(const StringArray& args)
@@ -740,8 +743,11 @@ void SamplePlayer::OnYoutubeSearchComplete(std::string searchTerm, double search
 
 void SamplePlayer::LoadFile()
 {
+   auto file_pattern = TheSynth->GetAudioFormatManager().getWildcardForAllFormats();
+   if (File::areFileNamesCaseSensitive())
+      file_pattern += ";" + file_pattern.toUpperCase();
    FileChooser chooser("Load sample", File(ofToDataPath("samples")),
-                       TheSynth->GetAudioFormatManager().getWildcardForAllFormats(), true, false, TheSynth->GetFileChooserParent());
+                       file_pattern, true, false, TheSynth->GetFileChooserParent());
    if (chooser.browseForFileToOpen())
    {
       auto file = chooser.getResult();

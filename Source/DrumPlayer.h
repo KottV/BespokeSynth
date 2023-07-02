@@ -44,18 +44,21 @@
 #include "PatchCableSource.h"
 #include "RollingBuffer.h"
 #include "GridController.h"
+#include "Push2Control.h"
 
 #define NUM_DRUM_HITS 16
 
 class SamplePlayer;
 
-class DrumPlayer : public IAudioSource, public INoteReceiver, public IDrawableModule, public IFloatSliderListener, public IDropdownListener, public IButtonListener, public IIntSliderListener, public ITextEntryListener, public IGridControllerListener, public ITimeListener
+class DrumPlayer : public IAudioSource, public INoteReceiver, public IDrawableModule, public IFloatSliderListener, public IDropdownListener, public IButtonListener, public IIntSliderListener, public ITextEntryListener, public IGridControllerListener, public ITimeListener, public IPush2GridController
 {
 public:
    DrumPlayer();
    ~DrumPlayer();
    static IDrawableModule* Create() { return new DrumPlayer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -87,6 +90,12 @@ public:
    //ITimeListener
    void OnTimeEvent(double time) override;
 
+   //IPush2GridController
+   bool OnPush2Control(Push2Control* push2, MidiMessageType type, int controlIndex, float midiValue) override;
+   void UpdatePush2Leds(Push2Control* push2) override;
+   bool HasPush2OverrideControls() const override { return mPush2SelectedHitIdx != -1; }
+   void GetPush2OverrideControls(std::vector<IUIControl*>& controls) const override;
+
    void FloatSliderUpdated(FloatSlider* slider, float oldVal, double time) override;
    void IntSliderUpdated(IntSlider* slider, int oldVal, double time) override;
    void DropdownUpdated(DropdownList* list, int oldVal, double time) override;
@@ -99,6 +108,8 @@ public:
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 1; }
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    struct StoredDrumKit
@@ -126,7 +137,6 @@ private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return mEnabled; }
    void OnClicked(float x, float y, bool right) override;
    std::vector<IUIControl*> ControlsToNotSetDuringLoadState() const override;
 
@@ -164,6 +174,9 @@ private:
    Checkbox* mNoteRepeatCheckbox{ nullptr };
    NoteInterval mQuantizeInterval{ NoteInterval::kInterval_None };
    DropdownList* mQuantizeIntervalSelector{ nullptr };
+   bool mFullVelocity{ false };
+   Checkbox* mFullVelocityCheckbox{ nullptr };
+   int mPush2SelectedHitIdx{ -1 };
 
    void LoadSampleLock();
    void LoadSampleUnlock();

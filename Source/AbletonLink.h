@@ -43,6 +43,9 @@ public:
    AbletonLink();
    virtual ~AbletonLink();
    static IDrawableModule* Create() { return new AbletonLink(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void Init() override;
    void CreateUIControls() override;
@@ -54,6 +57,7 @@ public:
 
    void CheckboxUpdated(Checkbox* checkbox, double time) override;
    void FloatSliderUpdated(FloatSlider* slider, float oldVal, double time) override;
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    //IDrawableModule
@@ -63,7 +67,6 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mWidth;
    float mHeight;

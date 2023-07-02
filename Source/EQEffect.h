@@ -46,9 +46,7 @@ public:
 
    static IAudioEffect* Create() { return new EQEffect(); }
 
-
    void CreateUIControls() override;
-
    void Init() override;
 
    //IAudioEffect
@@ -64,11 +62,15 @@ public:
    void ButtonClicked(ClickButton* button, double time) override;
    void GridUpdated(UIGrid* grid, int col, int row, float value, float oldValue) override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void GetModuleDimensions(float& width, float& height) override;
    void DrawModule() override;
-   bool Enabled() const override { return mEnabled; }
+   void OnClicked(float x, float y, bool right) override;
+   bool MouseMoved(float x, float y) override;
+   void MouseReleased() override;
 
    struct FilterBank
    {

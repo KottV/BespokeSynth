@@ -40,7 +40,9 @@ public:
    ModWheelToCV();
    virtual ~ModWheelToCV();
    static IDrawableModule* Create() { return new ModWheelToCV(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -63,6 +65,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -71,7 +75,6 @@ private:
       width = 106;
       height = 17 * 2 + 2;
    }
-   bool Enabled() const override { return mEnabled; }
 
    ModulationChain* mModWheel{ nullptr };
 };

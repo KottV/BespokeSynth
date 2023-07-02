@@ -39,7 +39,9 @@ public:
    Lissajous();
    virtual ~Lissajous();
    static IDrawableModule* Create() { return new Lissajous(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -56,6 +58,8 @@ public:
    void SaveLayout(ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -64,7 +68,6 @@ private:
       w = mWidth;
       h = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mWidth{ 500 };
    float mHeight{ 500 };

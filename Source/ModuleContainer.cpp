@@ -340,7 +340,7 @@ void ModuleContainer::DeleteModule(IDrawableModule* module, bool fail /*= true*/
       module->GetParent()->GetModuleParent()->RemoveChild(module);
 
    RemoveFromVector(module, mModules, fail);
-   for (auto iter : mModules)
+   for (const auto iter : mModules)
    {
       if (iter->GetPatchCableSource())
       {
@@ -350,12 +350,36 @@ void ModuleContainer::DeleteModule(IDrawableModule* module, bool fail /*= true*/
             if (cable->GetTarget() == module)
                cablesToDestroy.push_back(cable);
          }
-         for (auto cable : cablesToDestroy)
+         for (const auto cable : cablesToDestroy)
             cable->Destroy(false);
       }
    }
 
-   for (auto* child : module->GetChildren())
+   // Remove all cables that targetted control on this module
+   std::vector<IDrawableModule*> modules;
+   TheSynth->GetAllModules(modules);
+   std::vector<PatchCable*> cablesToDestroy;
+   for (const auto module_iter : modules)
+   {
+      for (const auto source : module_iter->GetPatchCableSources())
+      {
+         for (const auto cable : source->GetPatchCables())
+         {
+            for (const auto control : module->GetUIControls())
+            {
+               if (cable->GetTarget() == control)
+               {
+                  cablesToDestroy.push_back(cable);
+                  break;
+               }
+            }
+         }
+      }
+   }
+   for (const auto cable : cablesToDestroy)
+      cable->Destroy(false);
+
+   for (const auto child : module->GetChildren())
    {
       child->MarkAsDeleted();
       child->SetEnabled(false);
@@ -580,7 +604,7 @@ void ModuleContainer::SaveState(FileStreamOut& out)
    int savedModules = 0;
    for (auto* module : mModules)
    {
-      if (module != TheSaveDataPanel && module != TheTitleBar)
+      if (module->IsSaveable())
          ++savedModules;
    }
 
@@ -591,7 +615,7 @@ void ModuleContainer::SaveState(FileStreamOut& out)
 
    for (auto* module : mModules)
    {
-      if (module != TheSaveDataPanel && module != TheTitleBar)
+      if (module->IsSaveable())
       {
          //ofLog() << "Saving " << module->Name();
          out << std::string(module->Name());
@@ -618,6 +642,7 @@ void ModuleContainer::LoadState(FileStreamIn& in)
    in >> header;
    assert(header <= ModularSynth::kSaveStateRev);
    ModularSynth::sLoadingFileSaveStateRev = header;
+   ModularSynth::sLastLoadedFileSaveStateRev = header;
 
    int savedModules;
    in >> savedModules;

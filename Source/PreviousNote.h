@@ -34,7 +34,9 @@ class PreviousNote : public NoteEffectBase, public IDrawableModule
 public:
    PreviousNote();
    static IDrawableModule* Create() { return new PreviousNote(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
 
@@ -44,6 +46,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -52,7 +56,6 @@ private:
       width = 110;
       height = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    int mPitch{ -1 };
    int mVelocity{ 0 };

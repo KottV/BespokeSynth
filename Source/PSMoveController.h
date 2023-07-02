@@ -43,7 +43,9 @@ public:
    PSMoveController();
    ~PSMoveController();
    static IDrawableModule* Create() { return new PSMoveController(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -69,6 +71,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -77,7 +81,6 @@ private:
       width = 152;
       height = 140;
    }
-   bool Enabled() const override { return mEnabled; }
 
    PSMoveMgr mMoveMgr;
    Ramp mVibration;

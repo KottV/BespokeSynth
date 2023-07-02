@@ -72,6 +72,18 @@ void SingleOscillator::CreateUIControls()
    IDrawableModule::CreateUIControls();
 
    float width, height;
+
+   UIBLOCK(3 + kGap + kColumnWidth, 3, kColumnWidth);
+   UICONTROL_CUSTOM(mADSRDisplay, new ADSRDisplay(UICONTROL_BASICS("env"), kColumnWidth, 36, &mVoiceParams.mAdsr));
+   FLOATSLIDER(mVolSlider, "vol", &mVoiceParams.mVol, 0, 1);
+   FLOATSLIDER_DIGITS(mDetuneSlider, "detune", &mVoiceParams.mDetune, -.05f, .05f, 3);
+   INTSLIDER(mUnisonSlider, "unison", &mVoiceParams.mUnison, 1, SingleOscillatorVoice::kMaxUnison);
+   FLOATSLIDER(mUnisonWidthSlider, "width", &mVoiceParams.mUnisonWidth, 0, 1);
+   CHECKBOX(mLiteCPUModeCheckbox, "lite cpu", &mVoiceParams.mLiteCPUMode);
+   ENDUIBLOCK(width, height);
+   mWidth = MAX(width, mWidth);
+   mHeight = MAX(height, mHeight);
+
    UIBLOCK(3, 42, kColumnWidth);
    DROPDOWN(mOscSelector, "osc", (int*)(&mVoiceParams.mOscType), kColumnWidth / 2);
    UIBLOCK_SHIFTRIGHT();
@@ -87,15 +99,6 @@ void SingleOscillator::CreateUIControls()
    FLOATSLIDER(mSyncFreqSlider, "syncf", &mVoiceParams.mSyncFreq, 10, 999.9f);
    UIBLOCK_NEWLINE();
    UIBLOCK_POPSLIDERWIDTH();
-   ENDUIBLOCK(mWidth, mHeight);
-
-   UIBLOCK(3 + kGap + kColumnWidth, 3, kColumnWidth);
-   UICONTROL_CUSTOM(mADSRDisplay, new ADSRDisplay(UICONTROL_BASICS("env"), kColumnWidth, 36, &mVoiceParams.mAdsr));
-   FLOATSLIDER(mVolSlider, "vol", &mVoiceParams.mVol, 0, 1);
-   FLOATSLIDER_DIGITS(mDetuneSlider, "detune", &mVoiceParams.mDetune, -.05f, .05f, 3);
-   INTSLIDER(mUnisonSlider, "unison", &mVoiceParams.mUnison, 1, SingleOscillatorVoice::kMaxUnison);
-   FLOATSLIDER(mUnisonWidthSlider, "width", &mVoiceParams.mUnisonWidth, 0, 1);
-   CHECKBOX(mLiteCPUModeCheckbox, "lite cpu", &mVoiceParams.mLiteCPUMode);
    ENDUIBLOCK(width, height);
    mWidth = MAX(width, mWidth);
    mHeight = MAX(height, mHeight);
@@ -195,7 +198,7 @@ void SingleOscillator::PlayNote(double time, int pitch, int velocity, int voiceI
    }
    else
    {
-      mPolyMgr.Stop(time, pitch);
+      mPolyMgr.Stop(time, pitch, voiceIdx);
       mVoiceParams.mAdsr.Stop(time, false); //for visualization
       mVoiceParams.mFilterAdsr.Stop(time, false); //for visualization
    }
@@ -275,7 +278,7 @@ void SingleOscillator::DrawModule()
          phase += gTime * .005f;
          if (mVoiceParams.mSync)
          {
-            FloatWrap(phase, FTWO_PI);
+            phase = FloatWrap(phase, FTWO_PI);
             phase *= mVoiceParams.mSyncFreq / 200;
          }
          if (mDrawOsc.GetShuffle() > 0)
@@ -324,10 +327,6 @@ void SingleOscillator::UpdateOldControlName(std::string& oldName)
 void SingleOscillator::LoadLayout(const ofxJSONElement& moduleInfo)
 {
    mModuleSaveData.LoadString("target", moduleInfo);
-   mModuleSaveData.LoadFloat("vol", moduleInfo, .5, mVolSlider);
-   mModuleSaveData.LoadEnum<OscillatorType>("osc", moduleInfo, kOsc_Sin, mOscSelector);
-   mModuleSaveData.LoadFloat("detune", moduleInfo, 0, mDetuneSlider);
-   mModuleSaveData.LoadBool("pressure_envelope", moduleInfo);
    mModuleSaveData.LoadInt("voicelimit", moduleInfo, -1, -1, kNumVoices);
    mModuleSaveData.LoadBool("mono", moduleInfo, false);
 

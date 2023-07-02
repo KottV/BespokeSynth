@@ -42,7 +42,9 @@ public:
    Chorder();
    virtual ~Chorder();
    static IDrawableModule* Create() { return new Chorder(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -60,7 +62,7 @@ public:
    void OnScaleChanged() override;
 
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
-   virtual bool Enabled() const override { return mEnabled; }
+   virtual bool IsEnabled() const override { return mEnabled; }
 
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;

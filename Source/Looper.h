@@ -54,7 +54,9 @@ public:
    Looper();
    ~Looper();
    static IDrawableModule* Create() { return new Looper(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -63,7 +65,7 @@ public:
    void Commit(RollingBuffer* commitBuffer = nullptr);
    void Fill(ChannelBuffer* buffer, int length);
    void ResampleForSpeed(float speed);
-   int NumBars() const { return mNumBars; }
+   int GetNumBars() const { return mNumBars; }
    int GetRecorderNumBars() const;
    void SetNumBars(int numBars);
    void RecalcLoopLength() { UpdateNumBars(mNumBars); }
@@ -96,6 +98,7 @@ public:
 
    //IDrawableModule
    void FilesDropped(std::vector<std::string> files, int x, int y) override;
+   bool DrawToPush2Screen() override;
 
    void MergeIn(Looper* otherLooper);
    void SwapBuffers(Looper* otherLooper);
@@ -103,6 +106,8 @@ public:
    void SetLoopLength(int length);
    void SetRewriter(Rewriter* rewriter) { mRewriter = rewriter; }
    void Rewrite();
+   bool GetMute() const { return mMute; }
+   void SetMute(double time, bool mute);
 
    bool CheckNeedsDraw() override { return true; }
 
@@ -122,6 +127,8 @@ public:
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 1; }
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    void DoShiftMeasure();
@@ -143,13 +150,7 @@ private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return mEnabled; }
    void OnClicked(float x, float y, bool right) override;
-
-   static const int BUFFER_X = 3;
-   static const int BUFFER_Y = 3;
-   static const int BUFFER_W = 170;
-   static const int BUFFER_H = 93;
 
    ChannelBuffer* mBuffer{ nullptr };
    ChannelBuffer mWorkBuffer;
@@ -178,18 +179,18 @@ private:
    bool mWantShiftOffset{ false };
    bool mMute{ false };
    Checkbox* mMuteCheckbox{ nullptr };
+   bool mPassthrough{ true };
+   Checkbox* mPassthroughCheckbox{ nullptr };
    ClickButton* mCommitButton{ nullptr };
    ClickButton* mDoubleSpeedButton{ nullptr };
    ClickButton* mHalveSpeedButton{ nullptr };
+   ClickButton* mExtendButton{ nullptr };
    ChannelBuffer* mUndoBuffer{ nullptr };
    ClickButton* mUndoButton{ nullptr };
    bool mWantUndo{ false };
    bool mReplaceOnCommit{ false };
    float mLoopPosOffset{ 0 };
    FloatSlider* mLoopPosOffsetSlider{ nullptr };
-   bool mAllowChop{ false };
-   Checkbox* mAllowChopCheckbox{ nullptr };
-   int mChopMeasure{ 0 };
    ClickButton* mWriteOffsetButton{ nullptr };
    float mScratchSpeed{ 1 };
    bool mAllowScratch{ false };

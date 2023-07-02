@@ -66,7 +66,9 @@ public:
    SliderSequencer();
    ~SliderSequencer();
    static IDrawableModule* Create() { return new SliderSequencer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -85,8 +87,10 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
-   float MeasurePos(double time);
+   double MeasurePos(double time);
 
    //IDrawableModule
    void DrawModule() override;
@@ -95,7 +99,6 @@ private:
       width = 320;
       height = 165;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mLastMeasurePos{ 0 };
    std::vector<SliderLine*> mSliderLines;

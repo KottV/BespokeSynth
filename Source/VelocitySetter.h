@@ -37,7 +37,9 @@ class VelocitySetter : public NoteEffectBase, public IDrawableModule, public IFl
 public:
    VelocitySetter();
    static IDrawableModule* Create() { return new VelocitySetter(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -52,6 +54,7 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    //IDrawableModule
@@ -61,7 +64,6 @@ private:
       width = 90;
       height = 38;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mVelocity{ 1 };
    FloatSlider* mVelocitySlider{ nullptr };

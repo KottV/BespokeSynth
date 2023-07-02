@@ -63,7 +63,6 @@ private:
    ofVec2f mPosition;
    ofVec2f mDimensions;
    ::ADSR* mAdsr{ nullptr };
-   ::ADSR mViewAdsr;
    ::ADSR mClickAdsr;
    bool mClick{ false };
    ofVec2f mClickStart;
@@ -79,11 +78,14 @@ class EnvelopeEditor : public IDrawableModule, public IRadioButtonListener, publ
 public:
    EnvelopeEditor();
    static IDrawableModule* Create() { return new EnvelopeEditor(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
    void Delete() { delete this; }
    void DrawModule() override;
 
    void SetEnabled(bool enabled) override {} //don't use this one
-   bool Enabled() const override { return true; }
+   bool IsEnabled() const override { return true; }
    bool HasTitleBar() const override { return mPinned; }
    bool IsSaveable() override { return mPinned; }
    void CreateUIControls() override;
@@ -140,6 +142,7 @@ private:
    bool mPinned{ false };
    FloatSlider* mADSRViewLengthSlider{ nullptr };
    FloatSlider* mMaxSustainSlider{ nullptr };
+   Checkbox* mFreeReleaseLevelCheckbox{ nullptr };
    PatchCableSource* mTargetCable{ nullptr };
    std::array<StageControls, 10> mStageControls{};
 };

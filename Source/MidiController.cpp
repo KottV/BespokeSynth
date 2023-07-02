@@ -114,8 +114,6 @@ void MidiController::Init()
    mConnections.clear();
 
    mHasCreatedConnectionUIControls = false;
-   for (int i = 0; i < mConnectionsJson.size(); ++i)
-      AddControlConnection(mConnectionsJson[i]);
 
    TheTransport->AddAudioPoller(this);
 }
@@ -603,7 +601,7 @@ void MidiController::MidiReceived(MidiMessageType messageType, int control, floa
                if (connection->mIncrementAmount != 0)
                   uicontrol->Increment(connection->mIncrementAmount);
                else
-                  uicontrol->SetValue(connection->mValue, NextBufferTime(false));
+                  uicontrol->SetValue(connection->mValue, NextBufferTime(false), K(forceUpdate));
                uicontrol->StartBeacon();
             }
          }
@@ -614,13 +612,13 @@ void MidiController::MidiReceived(MidiMessageType messageType, int control, floa
                if (connection->mIncrementAmount != 0)
                   uicontrol->Increment(connection->mIncrementAmount);
                else
-                  uicontrol->SetValue(connection->mValue, NextBufferTime(false));
+                  uicontrol->SetValue(connection->mValue, NextBufferTime(false), K(forceUpdate));
                uicontrol->StartBeacon();
             }
          }
          else if (connection->mType == kControlType_Direct)
          {
-            uicontrol->SetValue(value * 127, NextBufferTime(false));
+            uicontrol->SetValue(value * 127, NextBufferTime(false), K(forceUpdate));
             uicontrol->StartBeacon();
          }
 
@@ -711,7 +709,7 @@ void MidiController::Poll()
          {
             if (mNonstandardController->Reconnect())
             {
-               ResyncTwoWay();
+               ResyncControllerState();
                mIsConnected = true;
 
                for (auto* grid : mGrids)
@@ -1438,8 +1436,38 @@ void MidiController::GetModuleDimensions(float& width, float& height)
    }
 }
 
-void MidiController::ResyncTwoWay()
+void MidiController::ResyncControllerState()
 {
+   if (mControllerPage >= 0 && mControllerPage < mListeners.size())
+   {
+      for (auto i = mListeners[mControllerPage].begin(); i != mListeners[mControllerPage].end(); ++i)
+         (*i)->ControllerPageSelected();
+   }
+   for (int i = 0; i < NUM_LAYOUT_CONTROLS; ++i)
+   {
+      if (mLayoutControls[i].mActive)
+      {
+         UIControlConnection* connection = GetConnectionForControl(mLayoutControls[i].mType, mLayoutControls[i].mControl);
+         if (connection && mLayoutControls[i].mControlCable)
+            mLayoutControls[i].mControlCable->SetTarget(connection->mUIControl);
+      }
+   }
+   for (auto* grid : mGrids)
+   {
+      if (grid->mGridControlTarget[mControllerPage] != nullptr)
+      {
+         //reset target
+         GridControlTarget* target = grid->mGridControlTarget[mControllerPage];
+         grid->mGridCable->ClearPatchCables();
+         grid->mGridCable->SetTarget(target);
+      }
+      else
+      {
+         grid->mGridCable->ClearPatchCables();
+      }
+   }
+   HighlightPageControls(mControllerPage);
+
    for (auto i = mConnections.begin(); i != mConnections.end(); ++i)
    {
       (*i)->mLastControlValue = -1;
@@ -1865,33 +1893,7 @@ void MidiController::DropdownUpdated(DropdownList* list, int oldVal, double time
    if (list == mPageSelector)
    {
       SetEntirePageToZero(oldVal);
-      if (mControllerPage >= 0 && mControllerPage < mListeners.size())
-      {
-         for (auto i = mListeners[mControllerPage].begin(); i != mListeners[mControllerPage].end(); ++i)
-            (*i)->ControllerPageSelected();
-      }
-      for (int i = 0; i < NUM_LAYOUT_CONTROLS; ++i)
-      {
-         if (mLayoutControls[i].mActive)
-         {
-            UIControlConnection* connection = GetConnectionForControl(mLayoutControls[i].mType, mLayoutControls[i].mControl);
-            if (connection && mLayoutControls[i].mControlCable)
-               mLayoutControls[i].mControlCable->SetTarget(connection->mUIControl);
-         }
-      }
-      for (auto* grid : mGrids)
-      {
-         if (grid->mGridControlTarget[mControllerPage] != nullptr)
-         {
-            grid->mGridCable->SetTarget(grid->mGridControlTarget[mControllerPage]);
-         }
-         else
-         {
-            grid->mGridCable->ClearPatchCables();
-         }
-      }
-      HighlightPageControls(mControllerPage);
-      ResyncTwoWay();
+      ResyncControllerState();
    }
    if (list == mControllerList)
    {
@@ -1979,7 +1981,11 @@ void MidiController::PreRepatch(PatchCableSource* cableSource)
       {
          grid->mGridControlTarget[mControllerPage] = dynamic_cast<GridControlTarget*>(cableSource->GetTarget());
          if (grid->mGridControlTarget[mControllerPage] && grid->mGridControlTarget[mControllerPage]->GetGridController())
-            dynamic_cast<GridControllerMidi*>(grid->mGridControlTarget[mControllerPage]->GetGridController())->UnhookController();
+         {
+            GridControllerMidi* gridMidi = dynamic_cast<GridControllerMidi*>(grid->mGridControlTarget[mControllerPage]->GetGridController());
+            if (gridMidi != nullptr)
+               gridMidi->UnhookController();
+         }
          return;
       }
    }
@@ -2154,7 +2160,7 @@ void MidiController::ConnectDevice()
 {
    mDevice.DisconnectInput();
    mDevice.DisconnectOutput();
-   ResyncTwoWay();
+   ResyncControllerState();
 
    std::string deviceInName = mControllerList->GetLabel(mControllerIndex);
    std::string deviceOutName = String(deviceInName).replace("Input", "Output").replace("input", "output").toStdString();
@@ -2317,7 +2323,7 @@ void MidiController::UpdateControllerIndex()
 void MidiController::SaveLayout(ofxJSONElement& moduleInfo)
 {
    mConnectionsJson.clear();
-   mConnectionsJson.resize((int)mConnections.size());
+   mConnectionsJson.resize((int)mConnections.size() + (int)mGrids.size());
    int i = 0;
    for (auto iter = mConnections.begin(); iter != mConnections.end(); ++iter)
    {
@@ -2414,6 +2420,9 @@ void MidiController::SaveState(FileStreamOut& out)
 void MidiController::LoadState(FileStreamIn& in, int rev)
 {
    IDrawableModule::LoadState(in, rev);
+
+   for (int i = 0; i < mConnectionsJson.size(); ++i)
+      AddControlConnection(mConnectionsJson[i]);
 
    if (!ModuleContainer::DoesModuleHaveMoreSaveData(in))
       return; //this was saved before we added versioning, bail out

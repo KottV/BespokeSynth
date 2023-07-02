@@ -74,6 +74,8 @@ void Ramper::CreateUIControls()
 
 void Ramper::OnTransportAdvanced(float amount)
 {
+   if (!mEnabled)
+      mRamping = false;
    if (mRamping)
    {
       float curMeasure = TheTransport->GetMeasure(gTime) + TheTransport->GetMeasurePos(gTime);
@@ -90,6 +92,11 @@ void Ramper::OnTransportAdvanced(float amount)
       }
       else if (progress >= 1)
       {
+         for (auto* control : mUIControls)
+         {
+            if (control != nullptr)
+               control->SetValue(mTargetValue, gTime);
+         }
          mRamping = false;
       }
    }

@@ -78,6 +78,7 @@ void DrumPlayer::CreateUIControls()
    mGridControlTarget = new GridControlTarget(this, "grid", 4, 50);
    mQuantizeIntervalSelector = new DropdownList(this, "quantize", 200, 4, (int*)(&mQuantizeInterval));
    mNoteRepeatCheckbox = new Checkbox(this, "repeat", 200, 22, &mNoteRepeat);
+   mFullVelocityCheckbox = new Checkbox(this, "full vel", 200, 40, &mFullVelocity);
 
    mKitSelector->SetShowing(false); //TODO(Ryan) replace "kits" concept with a better form of serialization
 
@@ -488,6 +489,9 @@ void DrumPlayer::PlayNote(double time, int pitch, int velocity, int voiceIdx, Mo
       return;
    }
 
+   if (velocity > 0 && mFullVelocityCheckbox)
+      velocity = 127;
+
    pitch %= 24;
    if (pitch >= 0 && pitch < NUM_DRUM_HITS)
    {
@@ -513,6 +517,108 @@ void DrumPlayer::PlayNote(double time, int pitch, int velocity, int voiceIdx, Mo
             startOffsetPercent += modulation.modWheel->GetValue(0);
          mDrumHits[pitch].StartPlayhead(time, startOffsetPercent, velocity / 127.0f);
       }
+   }
+}
+
+bool DrumPlayer::OnPush2Control(Push2Control* push2, MidiMessageType type, int controlIndex, float midiValue)
+{
+   if (type == kMidiMessage_Note)
+   {
+      if (controlIndex >= 36 && controlIndex <= 99)
+      {
+         int gridIndex = controlIndex - 36;
+         int x = gridIndex % 8;
+         int y = gridIndex / 8;
+
+         if (x < 4 && y < 4)
+         {
+            OnGridButton(x, 3 - y, midiValue / 127.0f, nullptr);
+         }
+         else if (x < 4 && midiValue > 0)
+         {
+            int index = x + (y - 4) * 4;
+            if (index == mPush2SelectedHitIdx)
+            {
+               mPush2SelectedHitIdx = -1;
+            }
+            else
+            {
+               mPush2SelectedHitIdx = index;
+               mSelectedHitIdx = index;
+               UpdateVisibleControls();
+            }
+         }
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+void DrumPlayer::UpdatePush2Leds(Push2Control* push2)
+{
+   for (int x = 0; x < 8; ++x)
+   {
+      for (int y = 0; y < 8; ++y)
+      {
+         int pushColor = 0;
+         int pushColorBlink = -1;
+
+         if (x < 4 && y < 4)
+         {
+            int index = x + y * 4;
+            if (mDrumHits[index].GetPlayProgress(gTime) < 1)
+               pushColor = 2;
+            else if (mDrumHits[index].mButtonHeldVelocity > 0)
+               pushColor = 66;
+            else
+               pushColor = 1;
+         }
+         else if (x < 4)
+         {
+            int index = x + (y - 4) * 4;
+            if (index == mPush2SelectedHitIdx)
+            {
+               pushColor = 126;
+               pushColorBlink = 86;
+            }
+            else
+            {
+               pushColor = 86;
+            }
+         }
+
+         push2->SetLed(kMidiMessage_Note, x + y * 8 + 36, pushColor, pushColorBlink);
+      }
+   }
+}
+
+void DrumPlayer::GetPush2OverrideControls(std::vector<IUIControl*>& controls) const
+{
+   if (mPush2SelectedHitIdx != -1)
+   {
+      int i = mPush2SelectedHitIdx;
+      controls.push_back(mDrumHits[i].mVolSlider);
+      controls.push_back(mDrumHits[i].mSpeedSlider);
+      if (mDrumHits[i].mUseEnvelope)
+      {
+         controls.push_back(mDrumHits[i].mEnvelopeDisplay);
+         controls.push_back(mDrumHits[i].mEnvelopeDisplay->GetASlider());
+         controls.push_back(mDrumHits[i].mEnvelopeDisplay->GetDSlider());
+         controls.push_back(mDrumHits[i].mEnvelopeDisplay->GetSSlider());
+         controls.push_back(mDrumHits[i].mEnvelopeDisplay->GetRSlider());
+      }
+      controls.push_back(mDrumHits[i].mTestButton);
+      controls.push_back(mDrumHits[i].mPrevButton);
+      controls.push_back(mDrumHits[i].mNextButton);
+      controls.push_back(mDrumHits[i].mRandomButton);
+      controls.push_back(mDrumHits[i].mUseEnvelopeCheckbox);
+      controls.push_back(mDrumHits[i].mPanSlider);
+      controls.push_back(mDrumHits[i].mWidenSlider);
+      controls.push_back(mDrumHits[i].mLinkIdSlider);
+      controls.push_back(mDrumHits[i].mHitCategoryDropdown);
+      controls.push_back(mDrumHits[i].mStartOffsetSlider);
    }
 }
 
@@ -705,6 +811,7 @@ void DrumPlayer::DrawModule()
       mShuffleButton->Draw();
       mQuantizeIntervalSelector->Draw();
       mNoteRepeatCheckbox->Draw();
+      mFullVelocityCheckbox->Draw();
 
       ofPushMatrix();
       ofPushStyle();

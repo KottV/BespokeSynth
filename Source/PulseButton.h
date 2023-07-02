@@ -37,7 +37,9 @@ public:
    PulseButton();
    virtual ~PulseButton();
    static IDrawableModule* Create() { return new PulseButton(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -45,6 +47,8 @@ public:
 
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
+
+   bool IsEnabled() const override { return true; }
 
 private:
    //IDrawableModule
@@ -54,7 +58,6 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return true; }
 
    ClickButton* mButton{ nullptr };
    float mWidth{ 200 };

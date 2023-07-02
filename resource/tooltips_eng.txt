@@ -11,11 +11,22 @@ timerdisplay~displays a timer to indicate how long a patch has been running
 
 
 
-timelinecontrol~[abandoned module, possibly broken] global timeline control to position transport
-~measure~[todo]
-~loop~[todo]
-~loop start~[todo]
-~loop end~[todo]
+timelinecontrol~control global transport position
+~measure~current position. click to jump around.
+~loop~should we have a looping section?
+~loop start~measure start of loop
+~loop end~measure end of loop
+~reset~reset to beginning
+~length~length of timeline display, in measures
+~dock~should we dock this module to the UI layer?
+
+
+
+buffershuffler~use notes to play back slices of a constantly-recording live input buffer. input notes trigger slices, with the pitch mapping to slice index. you can also click with a mouse to trigger slices.
+~num bars~number of bars to capture
+~interval~slice size
+~playback style~how to play clicked slices. or, with input notes, velocity range determines playback style.
+~freeze input~retain the current buffer, without writing in new input
 
 
 
@@ -52,11 +63,15 @@ radiosequencer~sequence to only enable one value at a time. patch it to the "ena
 
 
 
-presets~save and restore sets of values. connect the grey circle to modules to affect all controls on that module. connect the purple circle to a control to affect only that control. shift-click on the grid to store a preset to that square, and click on a grid square to load that preset.
-~blend~length of time in milliseconds over which to blend preset values
-~preset~jump to a preset
+snapshots~save and restore sets of values. connect the grey circle to modules to affect all controls on that module. connect the purple circle to a control to affect only that control. shift-click on the grid to store a preset to that square, and click on a grid square to load that preset.
+~blend~length of time in milliseconds over which to blend snapshot values
+~snapshot~jump to a snapshot
 ~random~randomize connected controls
-~add~snapshot the currently connected controls to the next available preset slot
+~add~snapshot the currently connected controls to the next available snapshot slot
+~clear~clear all snapshots
+~store~when clicking/selecting a snapshot, store into that slot (alternately: hold the shift key)
+~delete~when clicking/selecting a snapshot, delete that slot (alternately: hold the alt/option key)
+~auto-store on switch~when switching to a new slot, automatically store state in the current slot
 
 
 
@@ -206,6 +221,16 @@ pulsegate~control if pulses are allowed through
 
 pulsedelayer~delay pulses
 ~delay~time to delay, in fractions of a measure
+
+
+
+pulseflag~set properties on pulses
+~flag~property to add
+~replace~if disabled, the above flag is appended to the pulse's flags. if enabled, the pulse's flags are replaced by the above flag.
+
+
+
+pulsedisplayer~see what flags are on pulses
 
 
 
@@ -513,6 +538,7 @@ notetable~map a pitch (starting from zero) to a scale pitch
 ~y offset~y offset of attached grid controller
 ~rand pitch chance~when clicking the random pitch button, what is the chance that a step gets changed?
 ~rand pitch range~when clicking the random pitch button, how far will the pitch change?
+~clear~clear grid
 
 
 
@@ -628,7 +654,7 @@ fouronthefloor~sends note 0 every beat, to trigger a kick drum
 drumsequencer~step sequencer intended for drums. hold shift when dragging on the grid to adjust step velocity.
 ~vel~velocity to use when setting a step
 ~measures~length of the sequence in measures
-~preset~select a pattern preset
+~clear~clear sequence
 ~yoff~vertical offset for grid controller's view of the pattern
 ~offsets~show "offsets" sliders
 ~repeat~repeat input notes at this rate
@@ -795,7 +821,7 @@ pitchchorus~output pitch-shifted version of input audio, based on input midi not
 
 
 panner~pan audio left and right. also, converts a mono input to a stereo output.
-~pan~amount to send signal to the left and right channels. a value of .5 is centered.
+~pan~amount to send signal to the left and right channels. a value of 0 is centered.
 ~widen~delay a channel by this many samples. results in a pan-like effect where the sound seems to come from from a direction.
 
 
@@ -816,7 +842,7 @@ multitapdelay~delay with multiple tap points
 
 
 looperrewriter~rewrites the contents of a looper with received input, to help you resample your own loops. attach the grey dot to a "looper" module.\n\nthe ideal way to use this module is to hook the "looper" directly up to a "send", hook the leftmost outlet of the "send" up to your effects processing (like an "effectchain"), hook the effect processing up to this "rewriter", and then also connect the rightmost outlet of the "send" up to this "rewriter"
-~ go ~rewrite the connected looper, and if that looper is connected to a send, set that send to output only to the right outlet
+~go~rewrite the connected looper, and if that looper is connected to a send, set that send to output only to the right outlet
 ~new loop~start recording a dynamic loop length. press "go" when you want to rewrite it to the looper. this will also change bespoke's global tempo to match this new loop, so it's quite powerful and scary! click it again to cancel.
 
 
@@ -830,6 +856,7 @@ looperrecorder~command center to manage recording into multiple loopers, and all
 ~2xtempo~double global transport tempo, while keeping connected loopers sounding the same
 ~.5tempo~halve global transport tempo, while keeping connected loopers sounding the same
 ~target~looper to commit audio to when using the on-buffer capture buttons to the left
+~auto-advance~automatically advance to the next looper when committing
 ~mode~recorder mode: use "record" to record input and allow it to be committed to buffers when you're ready to loop, use "overdub" to record input and play the loop at our specified length, and use "loop" to play the current loop without adding input
 ~clear~clear the recorded buffer
 ~free rec~enable to start recording a loop with no predetermined length. disable to end recording, adjust global transport to match the loop length, and switch the recorder's mode to "loop"
@@ -850,6 +877,7 @@ looper~loop input audio. use with a "looperrecorder" for full functionality.
 ~decay~amount to lower volume each loop
 ~save~save this loop to a wav file
 ~mute~silence this looper
+~passthrough~allow input audio to pass through this looper
 ~commit~commit the current looperrecorder buffer to this loop
 ~capture~when the next loop begins, record input for the duration of the loop
 ~write~write input audio to loop buffer
@@ -857,9 +885,10 @@ looper~loop input audio. use with a "looperrecorder" for full functionality.
 ~copy~take the contents of this looper and copy it onto another. click this button on the copy source, then on the copy target.
 ~2x~make loop play at double speed
 ~.5x~make loop play at half speed
+~extend~make loop twice as long
 ~undo~undo last loop commit
 ~offset~amount to offset looper's playhead from transport position
-~set~shift the contents of the looper so the current offset is the start of the buffer
+~apply~shift the contents of the looper so the current offset is the start of the buffer
 ~scrspd~playback speed, used with "scr" is enabled. modulate quickly for a vinyl-like scratching effect.
 ~scr~allow loop to be scratched by adjusting "scrspd"
 ~fourtet~use a textural trick I saw four tet illustrate in a video once: slice the audio into chunks, and for each chunk it at double speed followed by playing it in reverse at double speed. this slider adjusts the mix between the original audio and this "fourtetified" audio.
@@ -873,6 +902,7 @@ looper~loop input audio. use with a "looperrecorder" for full functionality.
 ~pitch~amount to pitch shift looper output
 ~auto~should pitch shift auto-adjust as the transport tempo adjusts?
 ~resample for tempo~this button appears when the current global tempo no longer matches the tempo that the buffer was recorded at. click this to resample the buffer to match the new tempo.
+~passthrough~should we pass incoming audio through to the output? turn off to mute incoming audio.
 
 
 
@@ -1617,6 +1647,7 @@ noteecho~output incoming notes at specified delays
 noteratchet~rapidly repeat an input note over a duration
 ~duration~total length of time repeats should last
 ~subdivision~length of each repeat
+~skip first~don't replay input note. this allows you to more easily separate the initial note from the ratcheted notes.
 
 
 
@@ -1833,13 +1864,13 @@ newpatchconfirm~
 
 
 
-vstplugin~a VST plugin instance
+plugin~a hosted plugin instance, such as a VST
 ~vol~adjust the output volume
-~program change~send a program change message to the VST instance
+~program change~send a program change message to the plugin instance
 ~open~show the plugin window
-~show parameter~select parameters to display them, so they can be adjusted from within bespoke's interface. if a VST has more than 20 parameters, this list will initially be empty. in that case, to make a parameter appear in this list, wiggle it within the VST's interface.
-~preset~choose from saved VST presets
-~save as~save the current VST settings as a preset to load again later
+~show parameter~select parameters to display them, so they can be adjusted from within bespoke's interface. if a plugin has more than 20 parameters, this list will initially be empty. in that case, to make a parameter appear in this list, wiggle it within the plugin's interface.
+~preset~choose from saved plugin presets
+~save as~save the current plugin settings as a preset to load again later
 ~panic~send "all notes off" and "all sounds off" to this plugin in order to silence it immediately
 
 

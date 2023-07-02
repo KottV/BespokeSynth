@@ -48,7 +48,9 @@ public:
    NoteSinger();
    ~NoteSinger();
    static IDrawableModule* Create() { return new NoteSinger(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -77,6 +79,7 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    //IDrawableModule
@@ -86,7 +89,6 @@ private:
       width = 100;
       height = 50;
    }
-   bool Enabled() const override { return mEnabled; }
 
    int GetPitchForBucket(int bucket);
 

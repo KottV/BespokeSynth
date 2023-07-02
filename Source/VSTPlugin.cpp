@@ -486,6 +486,8 @@ void VSTPlugin::LoadVST(juce::PluginDescription desc)
 
       CreateParameterSliders();
 
+      RefreshPresetFiles();
+
       mPluginReady = true;
    }
    else
@@ -585,6 +587,7 @@ void VSTPlugin::Poll()
 
    if (mWantOpenVstWindow)
    {
+      mWantOpenVstWindow = false;
       if (mPlugin != nullptr)
       {
          if (mWindow == nullptr)
@@ -594,7 +597,6 @@ void VSTPlugin::Poll()
          //if (mWindow->GetNSViewComponent())
          //   mWindowOverlay = new NSWindowOverlay(mWindow->GetNSViewComponent()->getView());
       }
-      mWantOpenVstWindow = false;
    }
 }
 void VSTPlugin::audioProcessorChanged(juce::AudioProcessor* processor, const ChangeDetails& details)
@@ -986,7 +988,7 @@ void VSTPlugin::DropdownUpdated(DropdownList* list, int oldVal, double time)
             mPlugin->setCurrentProgramStateInformation(vstProgramState, vstProgramStateSize);
          }
 
-         if (rev >= 2)
+         if (rev >= 2 && mModuleSaveData.GetBool("preset_file_sets_params"))
          {
             int numParamsShowing = input->readInt();
             for (auto& param : mParameterSliders)
@@ -1131,9 +1133,14 @@ void VSTPlugin::RefreshPresetFiles()
    juce::File(ofToDataPath("vst/presets/" + GetPluginId())).createDirectory();
    mPresetFilePaths.clear();
    mPresetFileSelector->Clear();
-   for (const auto& entry : RangedDirectoryIterator{ File{ ofToDataPath("vst/presets/" + GetPluginId()) }, false, "*.vstp" })
+   juce::Array<juce::File> fileList;
+   for (const auto& entry : RangedDirectoryIterator{ juce::File{ ofToDataPath("vst/presets/" + GetPluginId()) }, false, "*.vstp" })
    {
-      const auto& file = entry.getFile();
+      fileList.add(entry.getFile());
+   }
+   fileList.sort();
+   for (const auto& file : fileList)
+   {
       mPresetFileSelector->AddLabel(file.getFileName().toStdString(), (int)mPresetFilePaths.size());
       mPresetFilePaths.push_back(file.getFullPathName().toStdString());
    }
@@ -1154,6 +1161,8 @@ void VSTPlugin::LoadLayout(const ofxJSONElement& moduleInfo)
    mModuleSaveData.LoadBool("usevoiceaschannel", moduleInfo, false);
    mModuleSaveData.LoadFloat("pitchbendrange", moduleInfo, 2, 1, 96, K(isTextField));
    mModuleSaveData.LoadInt("modwheelcc(1or74)", moduleInfo, 1, 0, 127, K(isTextField));
+
+   mModuleSaveData.LoadBool("preset_file_sets_params", moduleInfo, true);
 
    if (!moduleInfo["vst"].isNull())
       mOldVstPath = moduleInfo["vst"].asString();

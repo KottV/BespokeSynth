@@ -379,18 +379,20 @@ double GetPhaseInc(float freq)
    return freq * gTwoPiOverSampleRate;
 }
 
-void FloatWrap(float& num, float space)
+float FloatWrap(float num, float space)
 {
    if (space == 0)
       num = 0;
    num -= space * floor(num / space);
+   return num;
 }
 
-void FloatWrap(double& num, float space)
+double DoubleWrap(double num, float space)
 {
    if (space == 0)
       num = 0;
    num -= space * floor(num / space);
+   return num;
 }
 
 void DrawTextNormal(std::string text, int x, int y, float size)
@@ -420,7 +422,7 @@ void AssertIfDenormal(float input)
 
 float GetInterpolatedSample(double offset, const float* buffer, int bufferSize)
 {
-   FloatWrap(offset, bufferSize);
+   offset = DoubleWrap(offset, bufferSize);
    int pos = int(offset);
    int posNext = int(offset + 1) % bufferSize;
 
@@ -451,7 +453,7 @@ float GetInterpolatedSample(double offset, ChannelBuffer* buffer, int bufferSize
 
 void WriteInterpolatedSample(double offset, float* buffer, int bufferSize, float sample)
 {
-   FloatWrap(offset, bufferSize);
+   offset = DoubleWrap(offset, bufferSize);
    int pos = int(offset);
    int posNext = int(offset + 1) % bufferSize;
 
@@ -490,6 +492,8 @@ void UpdateTarget(IDrawableModule* module)
          IDrawableModule* target = dynamic_cast<IDrawableModule*>(audioSource->GetTarget(i));
          if (target)
             targetName = target->Path();
+         else
+            targetName = "";
          module->GetSaveData().SetString("target" + (i == 0 ? "" : ofToString(i + 1)), targetName);
       }
    }
@@ -670,10 +674,14 @@ bool IsInUnitBox(ofVec2f pos)
 
 std::string GetUniqueName(std::string name, std::vector<IDrawableModule*> existing)
 {
-   std::string origName = name;
-   while (origName.length() > 1 && CharacterFunctions::isDigit((char)origName[origName.length() - 1]))
-      origName.resize(origName.length() - 1);
+   std::string strippedName = name;
+   while (strippedName.length() > 1 && CharacterFunctions::isDigit((char)strippedName[strippedName.length() - 1]))
+      strippedName.resize(strippedName.length() - 1);
    int suffix = 1;
+   std::string suffixString = name;
+   ofStringReplace(suffixString, strippedName, "");
+   if (!suffixString.empty())
+      suffix = atoi(suffixString.c_str());
    while (true)
    {
       bool isNameUnique = true;
@@ -682,7 +690,7 @@ std::string GetUniqueName(std::string name, std::vector<IDrawableModule*> existi
          if (existing[i]->Name() == name)
          {
             ++suffix;
-            name = origName + ofToString(suffix);
+            name = strippedName + ofToString(suffix);
             isNameUnique = false;
             break;
          }
@@ -11631,8 +11639,8 @@ void DumpUnfreedMemory()
       const AllocInfo* info = element.second;
       if (info && info->allocated)
       {
-         sprintf(buf, "%-90s:  LINE %5d,  ADDRESS %08x  %8d unfreed",
-                 info->file, info->line, info->address, info->size);
+         snprintf(buf, sizeof(buf), "%-90s:  LINE %5d,  ADDRESS %08x  %8d unfreed",
+                  info->file, info->line, info->address, info->size);
          ofLog() << buf;
          totalSize += info->size;
 
@@ -11642,12 +11650,12 @@ void DumpUnfreedMemory()
    ofLog() << "-----------------------------------------------------------";
    for (auto fileInfo : perFileTotal)
    {
-      sprintf(buf, "%-90s:  %10d unfreed",
-              fileInfo.first.c_str(), fileInfo.second);
+      snprintf(buf, sizeof(buf), "%-90s:  %10d unfreed",
+               fileInfo.first.c_str(), fileInfo.second);
       ofLog() << buf;
    }
    ofLog() << "-----------------------------------------------------------";
-   sprintf(buf, "Total Unfreed: %d bytes", totalSize);
+   snprintf(buf, sizeof(buf), "Total Unfreed: %d bytes", totalSize);
    ofLog() << buf;
 };
 

@@ -42,7 +42,9 @@ public:
    Panner();
    virtual ~Panner();
    static IDrawableModule* Create() { return new Panner(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -60,6 +62,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -68,7 +72,6 @@ private:
       w = 120;
       h = 40;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mPan{ 0 };
    Ramp mPanRamp;

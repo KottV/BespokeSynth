@@ -358,7 +358,7 @@ bool FloatSlider::MouseMoved(float x, float y)
    return mMouseDown;
 }
 
-void FloatSlider::SetValueForMouse(int x, int y)
+void FloatSlider::SetValueForMouse(float x, float y)
 {
    float* var = GetModifyValue();
    float fX = x;
@@ -504,7 +504,7 @@ float FloatSlider::ValToPos(float val, bool ignoreSmooth) const
    return 0;
 }
 
-void FloatSlider::SetValue(float value, double time)
+void FloatSlider::SetValue(float value, double time, bool forceUpdate /*= false*/)
 {
    if (TheLFOController && TheLFOController->WantsBinding(this))
    {
@@ -531,7 +531,7 @@ void FloatSlider::SetValue(float value, double time)
    else*/
    *var = value;
    DisableLFO();
-   if (oldVal != *var)
+   if (oldVal != *var || forceUpdate)
    {
       mOwner->FloatSliderUpdated(this, oldVal, time);
    }
@@ -609,7 +609,7 @@ void FloatSlider::DoCompute(int samplesIn /*= 0*/)
    float oldVal = *mVar;
 
    const bool kUseCache = true;
-   if (kUseCache && samplesIn >= 0 && samplesIn < gBufferSize && mLastComputeCacheTime[samplesIn] == gTime)
+   if (kUseCache && IsAudioThread() && samplesIn >= 0 && samplesIn < gBufferSize && mLastComputeCacheTime[samplesIn] == gTime)
    {
       *mVar = mLastComputeCacheValue[samplesIn];
    }
@@ -626,7 +626,7 @@ void FloatSlider::DoCompute(int samplesIn /*= 0*/)
       if (mIsSmoothing)
          *mVar = mRamp.Value(gTime + samplesIn * gInvSampleRateMs);
 
-      if (samplesIn >= 0 && samplesIn < gBufferSize && mLastComputeCacheTime[samplesIn] != gTime)
+      if (IsAudioThread() && samplesIn >= 0 && samplesIn < gBufferSize && mLastComputeCacheTime[samplesIn] != gTime)
       {
          mLastComputeCacheValue[samplesIn] = *mVar;
          mLastComputeCacheTime[samplesIn] = gTime;
@@ -1067,7 +1067,7 @@ bool IntSlider::MouseMoved(float x, float y)
    return mMouseDown;
 }
 
-void IntSlider::SetValueForMouse(int x, int y)
+void IntSlider::SetValueForMouse(float x, float y)
 {
    int oldVal = *mVar;
    *mVar = (int)round(ofMap(x + mX, mX + 1, mX + mWidth - 1, mMin, mMax));
@@ -1093,11 +1093,11 @@ float IntSlider::GetValueForMidiCC(float slider) const
    return (int)round(ofMap(slider, 0, 1, mMin, mMax));
 }
 
-void IntSlider::SetValue(float value, double time)
+void IntSlider::SetValue(float value, double time, bool forceUpdate /*= false*/)
 {
    int oldVal = *mVar;
    *mVar = (int)round(ofClamp(value, mMin, mMax));
-   if (oldVal != *mVar)
+   if (oldVal != *mVar || forceUpdate)
    {
       CalcSliderVal();
       gControlTactileFeedback = 1;

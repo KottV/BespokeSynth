@@ -149,6 +149,8 @@ void DropdownList::Poll()
 {
    if (*mVar != mLastSetValue)
       CalcSliderVal();
+
+   mDropdownIsOpen = (TheSynth->GetTopModalFocusItem() == &mModalList);
 }
 
 void DropdownList::Render()
@@ -359,7 +361,7 @@ namespace
 
 void DropdownList::OnClicked(float x, float y, bool right)
 {
-   if (right)
+   if (right || mDropdownIsOpen)
       return;
 
    mOwner->DropdownClicked(this);
@@ -466,17 +468,13 @@ void DropdownList::SetIndex(int i, double time, bool forceUpdate)
    SetValue(mElements[i].mValue, time, forceUpdate);
 }
 
-void DropdownList::SetValue(float value, double time)
+void DropdownList::SetValue(float value, double time, bool forceUpdate /*= false*/)
 {
-   SetValue((int)value, time, false);
-}
-
-void DropdownList::SetValue(int value, double time, bool forceUpdate)
-{
-   if (value != *mVar || forceUpdate)
+   int intValue = (int)value;
+   if (intValue != *mVar || forceUpdate)
    {
       int oldVal = *mVar;
-      *mVar = value;
+      *mVar = intValue;
       CalcSliderVal();
       gControlTactileFeedback = 1;
       mOwner->DropdownUpdated(this, oldVal, time);

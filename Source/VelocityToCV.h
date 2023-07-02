@@ -40,7 +40,9 @@ public:
    VelocityToCV();
    virtual ~VelocityToCV();
    static IDrawableModule* Create() { return new VelocityToCV(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -63,6 +65,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -71,7 +75,6 @@ private:
       width = 106;
       height = 17 * 3 + 2;
    }
-   bool Enabled() const override { return mEnabled; }
 
    int mVelocity{ 0 };
    bool mPassZero{ false };

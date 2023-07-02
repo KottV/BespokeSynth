@@ -111,7 +111,7 @@ void PatchCableSource::SetPatchCableTarget(PatchCable* cable, IClickable* target
       RemoveFromVector(dynamic_cast<IPulseReceiver*>(cable->GetTarget()), mPulseReceivers);
    }
 
-   cable->SetTarget(target);
+   cable->SetCableTarget(target);
 
    INoteReceiver* noteReceiver = dynamic_cast<INoteReceiver*>(target);
    if (noteReceiver)
@@ -156,7 +156,7 @@ void PatchCableSource::Clear()
 
 void PatchCableSource::UpdatePosition(bool parentMinimized)
 {
-   if ((mAutomaticPositioning || parentMinimized) && mOwner != nullptr)
+   if (mOwner != nullptr && (mAutomaticPositioning || parentMinimized || mOwner->Minimized()))
    {
       float x, y, w, h;
       mOwner->GetPosition(x, y);
@@ -298,7 +298,7 @@ void PatchCableSource::Render()
       if (mDrawPass == DrawPass::kSource && (mPatchCableDrawMode != kPatchCableDrawMode_SourceOnHoverOnly || mHoverIndex != -1))
       {
          ofSetLineWidth(0);
-         ofColor color = mColor;
+         ofColor color = GetColor();
          float radius = kPatchCableSourceRadius;
          IDrawableModule* moveModule = TheSynth->GetMoveModule();
          if (GetKeyModifiers() == kModifier_Shift && moveModule != nullptr)
@@ -340,7 +340,7 @@ void PatchCableSource::Render()
             ofPushStyle();
             ofNoFill();
             ofSetColor(IDrawableModule::GetColor(kModuleCategory_Other));
-            GridControlTarget::DrawGridIcon(mX + 7, mY - 6);
+            GridControlTarget::DrawGridIcon(cableX + 7, cableY - 6);
             ofPopStyle();
          }
       }
@@ -357,6 +357,16 @@ void PatchCableSource::Render()
    }
 
    ofPopStyle();
+}
+
+ofColor PatchCableSource::GetColor() const
+{
+   if (mIsPartOfCircularDependency)
+   {
+      float pulse = ofMap(sin(gTime / 500 * PI * 2), -1, 1, .5f, 1);
+      return ofColor(255 * pulse, 255 * pulse, 0);
+   }
+   return mColor;
 }
 
 ofVec2f PatchCableSource::GetCableStart(int index) const
@@ -581,7 +591,7 @@ int PatchCableSource::GetHoverIndex(float x, float y) const
 
 bool PatchCableSource::Enabled() const
 {
-   return mEnabled && (mAutomaticPositioning || !mOwner->Minimized());
+   return mEnabled;
 }
 
 void PatchCableSource::OnClicked(float x, float y, bool right)
@@ -614,7 +624,7 @@ void PatchCableSource::FindValidTargets()
             if (uicontrol->IsShowing() &&
                 (uicontrol->GetShouldSaveState() || dynamic_cast<ClickButton*>(uicontrol) != nullptr) &&
                 uicontrol->CanBeTargetedBy(this) &&
-                !uicontrol->GetNoHover())
+                (!uicontrol->GetNoHover() || mType == kConnectionType_Grid))
                mValidTargets.push_back(uicontrol);
          }
       }
@@ -662,6 +672,7 @@ void PatchCableSource::KeyPressed(int key, bool isRepeat)
 void PatchCableSource::RemovePatchCable(PatchCable* cable, bool fromUserAction)
 {
    mOwner->PreRepatch(this);
+   bool hadAudioReceiver = (mAudioReceiver != nullptr);
    mAudioReceiver = nullptr;
    if (cable != nullptr)
    {
@@ -671,6 +682,9 @@ void PatchCableSource::RemovePatchCable(PatchCable* cable, bool fromUserAction)
    RemoveFromVector(cable, mPatchCables);
    mOwner->PostRepatch(this, fromUserAction);
    delete cable;
+
+   if (hadAudioReceiver)
+      TheSynth->ArrangeAudioSourceDependencies();
 }
 
 void PatchCableSource::ClearPatchCables()

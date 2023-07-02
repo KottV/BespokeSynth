@@ -38,7 +38,9 @@ public:
    ModulatorAdd();
    virtual ~ModulatorAdd();
    static IDrawableModule* Create() { return new ModulatorAdd(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -60,6 +62,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -68,7 +72,6 @@ private:
       w = 106;
       h = 17 * 2 + 4;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mValue1{ 0 };
    float mValue2{ 0 };

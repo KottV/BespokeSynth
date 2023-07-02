@@ -53,7 +53,9 @@ public:
    FubbleModule();
    ~FubbleModule();
    static IDrawableModule* Create() { return new FubbleModule(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -80,6 +82,8 @@ public:
    //IPatchable
    void PostRepatch(PatchCableSource* cableSource, bool fromUserClick) override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    float GetPlaybackTime(double time);
    ofRectangle GetFubbleRect();
@@ -93,7 +97,6 @@ private:
    //IDrawableModule
    void DrawModule() override;
    void DrawModuleUnclipped() override;
-   bool Enabled() const override { return mEnabled; }
    void GetModuleDimensions(float& width, float& height) override;
    void OnClicked(float x, float y, bool right) override;
    bool MouseMoved(float x, float y) override;
@@ -112,11 +115,11 @@ private:
 
       //IModulator
       virtual float Value(int samplesIn = 0) override;
-      virtual bool Active() const override { return mOwner->Enabled() && (mHasRecorded || mOwner->mIsRightClicking); }
+      virtual bool Active() const override { return mOwner->IsEnabled() && (mHasRecorded || mOwner->mIsRightClicking); }
 
       FubbleModule* mOwner{ nullptr };
       bool mIsHorizontal{ false };
-      Curve mCurve;
+      Curve mCurve{ 0 };
       bool mHasRecorded{ false };
    };
 

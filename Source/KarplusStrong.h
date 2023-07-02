@@ -45,7 +45,9 @@ public:
    KarplusStrong();
    ~KarplusStrong();
    static IDrawableModule* Create() { return new KarplusStrong(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -66,6 +68,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -75,7 +79,6 @@ private:
       width = 275;
       height = 126;
    }
-   bool Enabled() const override { return mEnabled; }
 
    PolyphonyMgr mPolyMgr;
    NoteInputBuffer mNoteInputBuffer;

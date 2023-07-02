@@ -45,12 +45,15 @@ public:
    EnvelopeModulator();
    virtual ~EnvelopeModulator();
    static IDrawableModule* Create() { return new EnvelopeModulator(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return true; }
    void Delete() { delete this; }
    void DrawModule() override;
 
    void Start(double time, const ::ADSR& adsr);
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
-   bool Enabled() const override { return mEnabled; }
+   bool IsEnabled() const override { return mEnabled; }
 
    void CreateUIControls() override;
    void MouseReleased() override;

@@ -37,7 +37,9 @@ public:
    NoteSustain();
    ~NoteSustain();
    static IDrawableModule* Create() { return new NoteSustain(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -58,6 +60,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -66,7 +70,6 @@ private:
       width = 110;
       height = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    struct QueuedNoteOff
    {

@@ -66,9 +66,10 @@ public:
    void TextEntryActivated(TextEntry* entry) override;
    void TextEntryComplete(TextEntry* entry) override;
 
+   bool IsEnabled() const override { return false; }
+
 private:
    void DrawModule() override {}
-   bool Enabled() const override { return false; }
 };
 
 class ModularSynth
@@ -170,11 +171,14 @@ public:
    void SetUIScale(float scale) { mUILayerModuleContainer.SetDrawScale(scale); }
    float GetUIScale() { return mUILayerModuleContainer.GetDrawScale(); }
    ModuleContainer* GetRootContainer() { return &mModuleContainer; }
+   ModuleContainer* GetUIContainer() { return &mUILayerModuleContainer; }
    bool ShouldShowGridSnap() const;
    bool MouseMovedSignificantlySincePressed() const { return mMouseMovedSignificantlySincePressed; }
 
    void ZoomView(float zoomAmount, bool fromMouse);
+   void SetZoomLevel(float zoomLevel);
    void PanView(float x, float y);
+   void PanTo(float x, float y);
    void SetRawSpaceMouseTwist(float twist, bool isUsing)
    {
       mSpaceMouseInfo.mTwist = twist;
@@ -264,7 +268,7 @@ public:
    void SaveStatePopup();
    void LoadStatePopup();
    void ToggleQuickSpawn();
-   double GetLastSaveTime() { return mLastSaveTime; }
+   QuickSpawnMenu* GetQuickSpawn() { return mQuickSpawn; }
    std::string GetLastSavePath() { return mCurrentSaveStatePath; }
 
    UserPrefsEditor* GetUserPrefsEditor() { return mUserPrefsEditor; }
@@ -284,7 +288,8 @@ public:
    static float sBackgroundB;
 
    static int sLoadingFileSaveStateRev;
-   static constexpr int kSaveStateRev = 423;
+   static int sLastLoadedFileSaveStateRev;
+   static constexpr int kSaveStateRev = 425;
 
 private:
    void ResetLayout();
@@ -297,6 +302,9 @@ private:
    void DeleteAllModules();
    void TriggerClapboard();
    void DoAutosave();
+   void FindCircularDependencies();
+   bool FindCircularDependencySearch(std::list<IAudioSource*> chain, IAudioSource* searchFrom);
+   void ClearCircularDependencyMarkers();
 
    void ReadClipboardTextFromSystem();
 
@@ -305,6 +313,7 @@ private:
    std::vector<IAudioSource*> mSources;
    std::vector<IDrawableModule*> mLissajousDrawers;
    std::vector<IDrawableModule*> mDeletedModules;
+   bool mHasCircularDependency{ false };
 
    std::vector<IDrawableModule*> mModalFocusItemStack;
 
@@ -362,6 +371,7 @@ private:
 
    bool mAudioPaused{ false };
    bool mIsLoadingState{ false };
+   bool mArrangeDependenciesWhenLoadCompletes{ false };
 
    ModuleFactory mModuleFactory;
    EffectFactory mEffectFactory;
@@ -377,11 +387,8 @@ private:
    bool mWantReloadInitialLayout{ false };
    std::string mCurrentSaveStatePath;
    std::string mStartupSaveStateFile;
-   double mLastSaveTime{ -9999 };
 
    Sample* mHeldSample{ nullptr };
-
-   float* mSaveOutputBuffer[2];
 
    IDrawableModule* mLastClickedModule{ nullptr };
    bool mInitialized{ false };

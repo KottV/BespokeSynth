@@ -39,7 +39,9 @@ public:
    NoteDelayer();
    ~NoteDelayer();
    static IDrawableModule* Create() { return new NoteDelayer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -57,6 +59,7 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    struct NoteInfo
@@ -74,7 +77,6 @@ private:
       width = 108;
       height = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mDelay{ .25 };
    FloatSlider* mDelaySlider{ nullptr };

@@ -72,7 +72,7 @@ void EQModule::CreateUIControls()
 
       CHECKBOX(filter.mEnabledCheckbox, ("enabled" + ofToString(i)).c_str(), &filter.mEnabled);
       DROPDOWN(filter.mTypeSelector, ("type" + ofToString(i)).c_str(), (int*)(&filter.mFilter[0].mType), 45);
-      FLOATSLIDER(filter.mFSlider, ("f" + ofToString(i)).c_str(), &filter.mFilter[0].mF, 0, 10000);
+      FLOATSLIDER(filter.mFSlider, ("f" + ofToString(i)).c_str(), &filter.mFilter[0].mF, 20, 20000);
       FLOATSLIDER(filter.mGSlider, ("g" + ofToString(i)).c_str(), &filter.mFilter[0].mDbGain, -15, 15);
       FLOATSLIDER_DIGITS(filter.mQSlider, ("q" + ofToString(i)).c_str(), &filter.mFilter[0].mQ, .1f, 18, 3);
       UIBLOCK_NEWCOLUMN();
@@ -103,15 +103,18 @@ void EQModule::Process(double time)
 {
    PROFILER(EQModule);
 
-   ComputeSliders(0);
-
-   for (auto& filter : mFilters)
+   if (mLiteCpuModulation)
    {
-      if (filter.mEnabled)
+      ComputeSliders(0);
+
+      for (auto& filter : mFilters)
       {
-         bool updated = filter.UpdateCoefficientsIfNecessary();
-         if (updated)
-            mNeedToUpdateFrequencyResponseGraph = true;
+         if (filter.mEnabled)
+         {
+            bool updated = filter.UpdateCoefficientsIfNecessary();
+            if (updated)
+               mNeedToUpdateFrequencyResponseGraph = true;
+         }
       }
    }
 
@@ -129,16 +132,49 @@ void EQModule::Process(double time)
       ChannelBuffer* out = target->GetBuffer();
       gWorkChannelBuffer.SetNumActiveChannels(out->NumActiveChannels());
 
+      if (!mLiteCpuModulation) //should we try to recalculate filters every sample?
+      {
+         for (int i = 0; i < GetBuffer()->BufferSize(); ++i)
+         {
+            ComputeSliders(i);
+
+            for (auto& filter : mFilters)
+            {
+               if (filter.mEnabled)
+               {
+                  bool updated = filter.UpdateCoefficientsIfNecessary();
+                  if (updated)
+                     mNeedToUpdateFrequencyResponseGraph = true;
+               }
+            }
+
+            for (int ch = 0; ch < GetBuffer()->NumActiveChannels(); ++ch)
+            {
+               float sample = GetBuffer()->GetChannel(ch)[i];
+               for (auto& filter : mFilters)
+               {
+                  if (filter.mEnabled)
+                     sample = filter.mFilter[ch].Filter(sample);
+               }
+               gWorkChannelBuffer.GetChannel(ch)[i] = sample;
+            }
+         }
+      }
+      else
+      {
+         for (int ch = 0; ch < GetBuffer()->NumActiveChannels(); ++ch)
+         {
+            BufferCopy(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->GetChannel(ch), GetBuffer()->BufferSize());
+            for (auto& filter : mFilters)
+            {
+               if (filter.mEnabled)
+                  filter.mFilter[ch].Filter(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->BufferSize());
+            }
+         }
+      }
+
       for (int ch = 0; ch < GetBuffer()->NumActiveChannels(); ++ch)
       {
-         BufferCopy(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->GetChannel(ch), GetBuffer()->BufferSize());
-         for (auto& filter : mFilters)
-         {
-            if (filter.mEnabled)
-               filter.mFilter[ch].Filter(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->BufferSize());
-         }
-         //Add(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->GetChannel(ch), GetBuffer()->BufferSize());
-
          Add(out->GetChannel(ch), gWorkChannelBuffer.GetChannel(ch), GetBuffer()->BufferSize());
          GetVizBuffer()->WriteChunk(gWorkChannelBuffer.GetChannel(ch), GetBuffer()->BufferSize(), ch);
       }
@@ -334,8 +370,10 @@ bool EQModule::MouseMoved(float x, float y)
    {
       if (mHoveredFilterHandleIndex != -1)
       {
-         mFilters[mHoveredFilterHandleIndex].mFSlider->SetValue(FreqForPos(x / w), NextBufferTime(false));
-         mFilters[mHoveredFilterHandleIndex].mGSlider->SetValue(GainForPos((y - kDrawYOffset) / h), NextBufferTime(false));
+         auto* fSlider = mFilters[mHoveredFilterHandleIndex].mFSlider;
+         auto* gSlider = mFilters[mHoveredFilterHandleIndex].mGSlider;
+         fSlider->SetValue(ofClamp(FreqForPos(x / w), fSlider->GetMin(), fSlider->GetMax()), NextBufferTime(false));
+         gSlider->SetValue(ofClamp(GainForPos((y - kDrawYOffset) / h), gSlider->GetMin(), gSlider->GetMax()), NextBufferTime(false));
       }
    }
    else
@@ -354,6 +392,49 @@ bool EQModule::MouseMoved(float x, float y)
    }
 
    return false;
+}
+
+bool EQModule::MouseScrolled(float x, float y, float scrollX, float scrollY, bool isSmoothScroll, bool isInvertedScroll)
+{
+   if (mHoveredFilterHandleIndex != -1)
+   {
+      auto* qSlider = mFilters[mHoveredFilterHandleIndex].mQSlider;
+      float add = (2 * scrollY) / MAX(qSlider->GetModulatorMax() / qSlider->GetValue(), 0.1);
+      if (GetKeyModifiers() & kModifier_Command)
+      {
+         add *= 4;
+      }
+      else if (GetKeyModifiers() & kModifier_Shift)
+      {
+         add /= 10;
+      }
+      qSlider->SetValue(ofClamp(qSlider->GetValue() + add, qSlider->GetMin(), qSlider->GetMax()), NextBufferTime(false));
+   }
+   return false;
+}
+
+void EQModule::KeyPressed(int key, bool isRepeat)
+{
+   if (mHoveredFilterHandleIndex != -1)
+   {
+      auto* qSlider = mFilters[mHoveredFilterHandleIndex].mQSlider;
+      if (key == '\\')
+      {
+         qSlider->ResetToOriginal();
+      }
+      else if (key == '[')
+      {
+         qSlider->Halve();
+      }
+      else if (key == ']')
+      {
+         qSlider->Double();
+      }
+      else if ((toupper(key) == 'C' || toupper(key) == 'X') && GetKeyModifiers() == kModifier_Command)
+      {
+         TheSynth->CopyTextToClipboard(ofToString(qSlider->GetValue()));
+      }
+   }
 }
 
 void EQModule::FloatSliderUpdated(FloatSlider* slider, float oldVal, double time)
@@ -395,6 +476,12 @@ void EQModule::CheckboxUpdated(Checkbox* checkbox, double time)
    }
 }
 
+void EQModule::GetModuleDimensions(float& w, float& h)
+{
+   w = MAX(208, mWidth);
+   h = MAX(150, mHeight);
+}
+
 void EQModule::Resize(float w, float h)
 {
    mWidth = w;
@@ -410,6 +497,7 @@ void EQModule::LoadLayout(const ofxJSONElement& moduleInfo)
    mModuleSaveData.LoadInt("width", moduleInfo, mWidth, 50, 2000, K(isTextField));
    mModuleSaveData.LoadInt("height", moduleInfo, mHeight, 50, 2000, K(isTextField));
    mModuleSaveData.LoadFloat("draw_gain", moduleInfo, 1, .1f, 4, K(isTextField));
+   mModuleSaveData.LoadBool("lite_cpu_modulation", moduleInfo, true);
 
    SetUpFromSaveData();
 }
@@ -426,4 +514,5 @@ void EQModule::SetUpFromSaveData()
    mWidth = mModuleSaveData.GetInt("width");
    mHeight = mModuleSaveData.GetInt("height");
    mDrawGain = mModuleSaveData.GetFloat("draw_gain");
+   mLiteCpuModulation = mModuleSaveData.GetBool("lite_cpu_modulation");
 }

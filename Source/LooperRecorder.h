@@ -37,23 +37,26 @@
 #include "Looper.h"
 #include "Ramp.h"
 #include "DropdownList.h"
+#include "Push2Control.h"
 
 class Stutter;
 class PatchCableSource;
 
-class LooperRecorder : public IAudioProcessor, public IDrawableModule, public IButtonListener, public IFloatSliderListener, public IRadioButtonListener, public IIntSliderListener, public IDropdownListener
+class LooperRecorder : public IAudioProcessor, public IDrawableModule, public IButtonListener, public IFloatSliderListener, public IRadioButtonListener, public IIntSliderListener, public IDropdownListener, public IPush2GridController
 {
 public:
    LooperRecorder();
    ~LooperRecorder();
    static IDrawableModule* Create() { return new LooperRecorder(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
    void Init() override;
    void SetNumBars(int numBars) { mNumBars = numBars; }
-   int NumBars() { return mNumBars; }
+   int GetNumBars() const { return mNumBars; }
    void Commit(Looper* looper);
    void RequestMerge(Looper* looper);
    void RequestSwap(Looper* looper);
@@ -85,6 +88,10 @@ public:
    void PreRepatch(PatchCableSource* cableSource) override;
    void PostRepatch(PatchCableSource* cableSource, bool fromUserClick) override;
 
+   //IPush2GridController
+   bool OnPush2Control(Push2Control* push2, MidiMessageType type, int controlIndex, float midiValue) override;
+   void UpdatePush2Leds(Push2Control* push2) override;
+
    void ButtonClicked(ClickButton* button, double time) override;
    void CheckboxUpdated(Checkbox* checkbox, double time) override;
    void FloatSliderUpdated(FloatSlider* slider, float oldVal, double time) override;
@@ -100,6 +107,8 @@ public:
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 0; }
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    void SyncLoopLengths();
@@ -117,10 +126,8 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
-
    float mWidth{ 235 };
-   float mHeight{ 125 };
+   float mHeight{ 126 };
    RollingBuffer mRecordBuffer;
    std::vector<Looper*> mLoopers;
    int mNumBars{ 1 };
@@ -156,6 +163,9 @@ private:
    ClickButton* mCommit8BarsButton{ nullptr };
    IntSlider* mNextCommitTargetSlider{ nullptr };
    int mNextCommitTargetIndex{ 0 };
+   Checkbox* mAutoAdvanceThroughLoopersCheckbox{ nullptr };
+   bool mAutoAdvanceThroughLoopers{ false };
+   bool mTemporarilySilenceAfterCommit{ false };
 
    bool mFreeRecording{ false };
    Checkbox* mFreeRecordingCheckbox{ nullptr };

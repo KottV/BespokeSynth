@@ -37,7 +37,9 @@ class Neighborhooder : public NoteEffectBase, public IDrawableModule, public IIn
 public:
    Neighborhooder();
    static IDrawableModule* Create() { return new Neighborhooder(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -52,6 +54,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -60,7 +64,6 @@ private:
       width = 120;
       height = 38;
    }
-   bool Enabled() const override { return mEnabled; }
 
    int mMinPitch{ 55 };
    int mPitchRange{ 16 };

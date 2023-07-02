@@ -39,7 +39,9 @@ public:
    AudioToCV();
    virtual ~AudioToCV();
    static IDrawableModule* Create() { return new AudioToCV(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -60,6 +62,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -68,7 +72,6 @@ private:
       w = 106;
       h = 17 * 3 + 2;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mGain{ 1 };
    float* mModulationBuffer{ nullptr };

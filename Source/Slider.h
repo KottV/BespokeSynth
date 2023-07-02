@@ -110,7 +110,7 @@ public:
    //IUIControl
    void SetFromMidiCC(float slider, double time, bool setViaModulator) override;
    float GetValueForMidiCC(float slider) const override;
-   void SetValue(float value, double time) override;
+   void SetValue(float value, double time, bool forceUpdate = false) override;
    float GetValue() const override;
    std::string GetDisplayValue(float val) const override;
    float GetMidiValue() const override;
@@ -147,7 +147,7 @@ protected:
 
 private:
    void OnClicked(float x, float y, bool right) override;
-   void SetValueForMouse(int x, int y);
+   void SetValueForMouse(float x, float y);
    float* GetModifyValue();
    bool AdjustSmooth() const;
    void SmoothUpdated();
@@ -237,7 +237,7 @@ public:
    //IUIControl
    void SetFromMidiCC(float slider, double time, bool setViaModulator) override;
    float GetValueForMidiCC(float slider) const override;
-   void SetValue(float value, double time) override;
+   void SetValue(float value, double time, bool forceUpdate = false) override;
    float GetValue() const override;
    float GetMidiValue() const override;
    void GetRange(float& min, float& max) override
@@ -277,7 +277,7 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   void SetValueForMouse(int x, int y);
+   void SetValueForMouse(float x, float y);
    void CalcSliderVal();
 
    int mWidth;

@@ -39,7 +39,9 @@ public:
    PulseDelayer();
    ~PulseDelayer();
    static IDrawableModule* Create() { return new PulseDelayer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return true; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -57,6 +59,7 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    struct PulseInfo
@@ -73,7 +76,6 @@ private:
       width = 108;
       height = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mDelay{ .25 };
    FloatSlider* mDelaySlider{ nullptr };

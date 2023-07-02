@@ -48,7 +48,9 @@ public:
    SingleOscillator();
    ~SingleOscillator();
    static IDrawableModule* Create() { return new SingleOscillator(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -74,6 +76,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -83,7 +87,6 @@ private:
       width = mWidth;
       height = mHeight;
    }
-   bool Enabled() const override { return mEnabled; }
    void UpdateOldControlName(std::string& oldName) override;
 
    float mWidth{ 200 };

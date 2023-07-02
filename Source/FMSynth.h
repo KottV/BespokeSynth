@@ -43,7 +43,9 @@ public:
    FMSynth();
    ~FMSynth();
    static IDrawableModule* Create() { return new FMSynth(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -64,6 +66,8 @@ public:
 
    bool HasDebugDraw() const override { return true; }
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    void UpdateHarmonicRatio();
 
@@ -75,7 +79,6 @@ private:
       width = 180;
       height = 203;
    }
-   bool Enabled() const override { return mEnabled; }
 
    PolyphonyMgr mPolyMgr;
    NoteInputBuffer mNoteInputBuffer;

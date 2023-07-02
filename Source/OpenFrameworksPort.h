@@ -52,7 +52,7 @@ struct ofColor
    int b{ 0 };
    int a{ 255 };
 
-   static ofColor black, white, grey, red, green, yellow, blue, orange, purple, lime, magenta, clear;
+   static ofColor black, white, grey, red, green, yellow, blue, orange, purple, lime, magenta, cyan, clear;
 
    static ofColor lerp(ofColor a, ofColor b, float t)
    {
@@ -271,6 +271,7 @@ void ofSetLineWidth(float width);
 void ofBeginShape();
 void ofEndShape(bool close = false);
 void ofVertex(float x, float y, float z = 0);
+void ofVertex(ofVec2f point);
 float ofMap(float val, float fromStart, float fromEnd, float toStart, float toEnd, bool clamp = false);
 float ofRandom(float max);
 float ofRandom(float x, float y);

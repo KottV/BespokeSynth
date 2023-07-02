@@ -41,6 +41,9 @@ public:
    UserPrefsEditor();
    ~UserPrefsEditor();
    static IDrawableModule* Create() { return new UserPrefsEditor(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -63,10 +66,11 @@ public:
    std::vector<IUIControl*> ControlsToNotSetDuringLoadState() const override;
    std::vector<IUIControl*> ControlsToIgnoreInSaveState() const override;
 
+   bool IsEnabled() const override { return true; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
-   bool Enabled() const override { return true; }
    void GetModuleDimensions(float& width, float& height) override
    {
       width = mWidth;

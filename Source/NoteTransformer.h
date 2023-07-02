@@ -38,7 +38,9 @@ public:
    NoteTransformer();
    ~NoteTransformer();
    static IDrawableModule* Create() { return new NoteTransformer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
 
@@ -51,6 +53,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -59,13 +63,11 @@ private:
       width = 120;
       height = 135;
    }
-   bool Enabled() const override { return mEnabled; }
-
 
    int mToneMod[7]{};
    IntSlider* mToneModSlider[7];
    double mLastTimeTonePlayed[7]{};
-   int mLastNoteOnForPitch[127];
+   int mLastNoteOnForPitch[128];
 };
 
 

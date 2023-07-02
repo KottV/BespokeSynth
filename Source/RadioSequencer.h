@@ -48,7 +48,9 @@ public:
    RadioSequencer();
    ~RadioSequencer();
    static IDrawableModule* Create() { return new RadioSequencer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return true; }
 
    void CreateUIControls() override;
 
@@ -80,7 +82,7 @@ public:
    bool HasExternalPulseSource() const override { return mHasExternalPulseSource; }
    void ResetExternalPulseSource() override { mHasExternalPulseSource = false; }
 
-   void CheckboxUpdated(Checkbox* checkbox, double time) override {}
+   void CheckboxUpdated(Checkbox* checkbox, double time) override;
    void DropdownUpdated(DropdownList* list, int oldVal, double time) override;
    void IntSliderUpdated(IntSlider* slider, int oldVal, double time) override;
 
@@ -96,6 +98,8 @@ public:
    //IPatchable
    void PostRepatch(PatchCableSource* cableSource, bool fromUserClick) override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    void Step(double time, int pulseFlags);
    void SetGridSize(float w, float h);
@@ -104,7 +108,6 @@ private:
 
    //IDrawableModule
    void DrawModule() override;
-   bool Enabled() const override { return mEnabled; }
    void GetModuleDimensions(float& w, float& h) override;
    void OnClicked(float x, float y, bool right) override;
    bool MouseMoved(float x, float y) override;
@@ -121,6 +124,7 @@ private:
    bool mHasExternalPulseSource{ false };
    int mStep{ 0 };
    int mLoadRev{ -1 };
+   bool mDisableAllWhenDisabled{ true };
 
    TransportListenerInfo* mTransportListenerInfo{ nullptr };
 };

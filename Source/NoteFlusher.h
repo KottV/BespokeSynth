@@ -36,7 +36,9 @@ class NoteFlusher : public NoteEffectBase, public IDrawableModule, public IButto
 public:
    NoteFlusher();
    static IDrawableModule* Create() { return new NoteFlusher(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -44,6 +46,8 @@ public:
 
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    //IDrawableModule
@@ -53,7 +57,6 @@ private:
       width = 90;
       height = 18;
    }
-   bool Enabled() const override { return mEnabled; }
 
    ClickButton* mFlushButton{ nullptr };
 };

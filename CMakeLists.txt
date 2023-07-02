@@ -18,6 +18,7 @@ option(BESPOKE_SYSTEM_TUNING_LIBRARY "Use system installation of tuning-library"
 option(BESPOKE_USE_ASAN "Build with ASAN" OFF)
 
 # Global CMake options
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # clangd/LSP support
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -75,7 +76,7 @@ if(BESPOKE_PYTHON_ROOT)
     set(Python_ROOT "${BESPOKE_PYTHON_ROOT}")
     message(STATUS "Overriding Python_ROOT to ${Python_ROOT}")
 endif()
-find_package (Python COMPONENTS Interpreter Development REQUIRED)
+find_package (Python 3.6 COMPONENTS Interpreter Development REQUIRED)
 message(STATUS "Python version: ${Python_VERSION}")
 message(STATUS "Python executable: ${Python_EXECUTABLE}")
 message(STATUS "Python library: ${Python_LIBRARIES}")

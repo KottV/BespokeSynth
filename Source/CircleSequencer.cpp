@@ -38,8 +38,7 @@ namespace
 
    ofVec2f CarToPol(float x, float y)
    {
-      float pos = atan2(x, -y) / TWO_PI;
-      FloatWrap(pos, 1);
+      float pos = FloatWrap(atan2(x, -y) / TWO_PI, 1);
       return ofVec2f(pos, sqrtf(x * x + y * y));
    }
 }
@@ -250,8 +249,7 @@ void CircleSequencerRing::Draw()
 int CircleSequencerRing::GetStepIndex(int x, int y, float& radiusOut)
 {
    ofVec2f polar = CarToPol(x - 100, y - 100);
-   float pos = polar.x + mOffset;
-   FloatWrap(pos, 1);
+   float pos = FloatWrap(polar.x + mOffset, 1);
    int idx = int(pos * mLength + .5f) % mLength;
 
    ofVec2f stepPos = PolToCar(float(idx) / mLength - mOffset, GetRadius());
@@ -310,11 +308,14 @@ void CircleSequencerRing::OnTransportAdvanced(float amount)
    info.mCustomDivisor = mLength;
 
    double remainderMs;
-   int oldStep = TheTransport->GetQuantized(gTime, &info);
-   int newStep = TheTransport->GetQuantized(NextBufferTime(false), &info, &remainderMs);
-   if (oldStep != newStep && mSteps[newStep] > 0)
+   const int oldStep = TheTransport->GetQuantized(NextBufferTime(true) - gBufferSizeMs, &info);
+   const int newStep = TheTransport->GetQuantized(NextBufferTime(true), &info, &remainderMs);
+   const int oldMeasure = TheTransport->GetMeasure(NextBufferTime(true) - gBufferSizeMs);
+   const int newMeasure = TheTransport->GetMeasure(NextBufferTime(true));
+
+   if ((oldMeasure != newMeasure || oldStep != newStep) && mSteps[newStep] > 0)
    {
-      double time = NextBufferTime(false) - remainderMs;
+      const double time = NextBufferTime(true) - remainderMs;
       mOwner->PlayNoteOutput(time, mPitch, mSteps[newStep] * 127, -1);
       mOwner->PlayNoteOutput(time + TheTransport->GetDuration(kInterval_16n), mPitch, 0, -1);
    }

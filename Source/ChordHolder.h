@@ -38,7 +38,9 @@ class ChordHolder : public NoteEffectBase, public IDrawableModule, public IButto
 public:
    ChordHolder();
    static IDrawableModule* Create() { return new ChordHolder(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return true; }
 
    void CreateUIControls() override;
 
@@ -56,6 +58,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -64,7 +68,6 @@ private:
       width = 131;
       height = 21;
    }
-   bool Enabled() const override { return mEnabled; }
 
    void Stop(double time);
 

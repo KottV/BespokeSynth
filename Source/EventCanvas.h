@@ -44,7 +44,9 @@ public:
    EventCanvas();
    ~EventCanvas();
    static IDrawableModule* Create() { return new EventCanvas(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -78,14 +80,16 @@ public:
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 0; }
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return mEnabled; }
 
    void UpdateNumColumns();
    void SyncControlCablesToCanvas();
+   double GetTriggerTime(double lookaheadTime, double lookaheadPos, float eventPos);
 
    Canvas* mCanvas{ nullptr };
    CanvasControls* mCanvasControls{ nullptr };
@@ -101,7 +105,7 @@ private:
    std::vector<ofColor> mRowColors{};
    bool mRecord{ false };
    Checkbox* mRecordCheckbox{ nullptr };
-   float mPreviousPosition{ 0 };
+   double mPreviousPosition{ 0 };
 
    struct ControlConnection
    {

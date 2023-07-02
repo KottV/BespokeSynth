@@ -32,13 +32,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "IPulseReceiver.h"
 #include "Slider.h"
 #include "TextEntry.h"
+#include "Push2Control.h"
 
-class SongBuilder : public IDrawableModule, public IButtonListener, public IDropdownListener, public IIntSliderListener, public ITimeListener, public IPulseReceiver, public ITextEntryListener, public INoteReceiver
+class SongBuilder : public IDrawableModule, public IButtonListener, public IDropdownListener, public IIntSliderListener, public ITimeListener, public IPulseReceiver, public ITextEntryListener, public INoteReceiver, public IPush2GridController
 {
 public:
    SongBuilder();
    virtual ~SongBuilder();
    static IDrawableModule* Create() { return new SongBuilder(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return true; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -56,6 +60,11 @@ public:
    void SendPressure(int pitch, int pressure) override {}
    void SendCC(int control, int value, int voiceIdx = -1) override {}
 
+   //IPush2GridController
+   bool OnPush2Control(Push2Control* push2, MidiMessageType type, int controlIndex, float midiValue) override;
+   void UpdatePush2Leds(Push2Control* push2) override;
+   bool DrawToPush2Screen() override;
+
    void ButtonClicked(ClickButton* button, double time) override;
    void DropdownClicked(DropdownList* list) override;
    void DropdownUpdated(DropdownList* list, int oldVal, double time) override;
@@ -66,13 +75,14 @@ public:
    void SetUpFromSaveData() override;
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, int rev) override;
-   int GetModuleSaveStateRev() const override { return 0; }
+   int GetModuleSaveStateRev() const override { return 1; }
+
+   bool IsEnabled() const override { return mEnabled; }
 
 private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return mEnabled; }
    bool IsResizable() const override { return false; }
    void PostRepatch(PatchCableSource* cable, bool fromUserClick) override;
    bool ShouldSavePatchCableSources() const override { return false; }
@@ -102,6 +112,7 @@ private:
       void TargetControlUpdated();
       IUIControl* GetTarget() const;
       void CleanUp();
+      ofColor GetColor() { return mOwner->mColors[mColorIndex].color; }
 
       enum class DisplayType
       {
@@ -111,12 +122,16 @@ private:
          NumDisplayTypes
       };
 
+      SongBuilder* mOwner;
       PatchCableSource* mCable{ nullptr };
       DisplayType mDisplayType{ DisplayType::TextEntry };
       ClickButton* mMoveLeftButton{ nullptr };
       ClickButton* mMoveRightButton{ nullptr };
       ClickButton* mCycleDisplayTypeButton{ nullptr };
+      DropdownList* mColorSelector{ nullptr };
       bool mHadTarget{ false };
+      int mColorIndex{ 0 };
+      int mId{ -1 };
    };
 
    struct ControlValue
@@ -157,6 +172,17 @@ private:
       int mId{ -1 };
    };
 
+   struct TargetColor
+   {
+      TargetColor(std::string _name, ofColor _color)
+      {
+         name = _name;
+         color = _color;
+      }
+      std::string name;
+      ofColor color;
+   };
+
    int mCurrentScene{ -1 };
    int mQueuedScene{ -1 };
    int mSequenceStepIndex{ -1 };
@@ -166,6 +192,7 @@ private:
    bool mWantResetClock{ false };
    bool mJustResetClock{ false };
    bool mWantRefreshValueDropdowns{ false };
+   std::vector<TargetColor> mColors{};
 
    static const int kMaxSequencerScenes = 128;
    static const int kSequenceEndId = -1;
@@ -174,7 +201,7 @@ private:
    Checkbox* mUseSequencerCheckbox{ nullptr };
    bool mActivateFirstSceneOnStop{ true };
    Checkbox* mActivateFirstSceneOnStopCheckbox{ nullptr };
-   NoteInterval mChangeQuantizeInterval{ NoteInterval::kInterval_None };
+   NoteInterval mChangeQuantizeInterval{ NoteInterval::kInterval_1n };
    DropdownList* mChangeQuantizeSelector{ nullptr };
    ClickButton* mAddTargetButton{ nullptr };
    ClickButton* mPlaySequenceButton{ nullptr };

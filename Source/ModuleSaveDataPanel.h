@@ -46,6 +46,9 @@ public:
    ~ModuleSaveDataPanel();
    static IDrawableModule* Create() { return new ModuleSaveDataPanel(); }
    static bool CanCreate() { return TheSaveDataPanel == nullptr; }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    std::string GetTitleLabel() const override { return ""; }
    bool AlwaysOnTop() override { return true; }
@@ -67,13 +70,14 @@ public:
 
    bool IsSaveable() override { return false; }
 
+   bool IsEnabled() const override { return true; }
+
 private:
    void ApplyChanges();
    void FillDropdownList(DropdownList* list, ModuleSaveData::SaveVal* save);
 
    //IDrawableModule
    void DrawModule() override;
-   bool Enabled() const override { return true; }
    void GetModuleDimensions(float& width, float& height) override;
 
    IDrawableModule* mSaveModule{ nullptr };

@@ -53,6 +53,18 @@ SongBuilder::SongBuilder()
       mSequencerContextMenuSelection[i] = ContextMenuItems::kNone;
    }
 
+   const float kColorDim = .7f;
+   ofColor grey = IDrawableModule::GetColor(kModuleCategory_Other);
+   mColors.push_back(TargetColor("grey", grey * kColorDim));
+   mColors.push_back(TargetColor("red", ofColor::red * kColorDim));
+   mColors.push_back(TargetColor("orange", ofColor::orange * kColorDim));
+   mColors.push_back(TargetColor("yellow", ofColor::yellow * kColorDim));
+   mColors.push_back(TargetColor("green", ofColor::green * kColorDim));
+   mColors.push_back(TargetColor("cyan", ofColor::cyan * kColorDim));
+   mColors.push_back(TargetColor("blue", ofColor::blue * kColorDim));
+   mColors.push_back(TargetColor("purple", ofColor::purple * kColorDim));
+   mColors.push_back(TargetColor("magenta", ofColor::magenta * kColorDim));
+
    mTransportPriority = -1000;
 }
 
@@ -92,6 +104,7 @@ void SongBuilder::CreateUIControls()
    for (int i = 0; i < kMaxSequencerScenes; ++i)
    {
       DROPDOWN(mSequencerSceneSelector[i], ("scene" + ofToString(i)).c_str(), &mSequencerSceneId[i], 80);
+      mSequencerSceneSelector[i]->SetCableTargetable(false);
       mSequencerSceneSelector[i]->SetDrawTriangle(false);
       UIBLOCK_SHIFTRIGHT();
       TEXTENTRY_NUM(mSequencerStepLengthEntry[i], ("bars" + ofToString(i)).c_str(), 3, &mSequencerStepLength[i], 1, 999);
@@ -103,6 +116,7 @@ void SongBuilder::CreateUIControls()
       mSequencerContextMenu[i]->AddLabel("delete", (int)ContextMenuItems::kDelete);
       mSequencerContextMenu[i]->AddLabel("move up", (int)ContextMenuItems::kMoveUp);
       mSequencerContextMenu[i]->AddLabel("move down", (int)ContextMenuItems::kMoveDown);
+      mSequencerContextMenu[i]->SetCableTargetable(false);
       mSequencerContextMenu[i]->SetDisplayStyle(DropdownDisplayStyle::kHamburger);
       UIBLOCK_NEWLINE();
    }
@@ -110,6 +124,7 @@ void SongBuilder::CreateUIControls()
 
    mChangeQuantizeSelector = new DropdownList(this, "change quantize", -1, -1, (int*)(&mChangeQuantizeInterval));
    mAddTargetButton = new ClickButton(this, "add target", -1, -1, ButtonDisplayStyle::kPlus);
+   mAddTargetButton->SetCableTargetable(false);
 
    mChangeQuantizeSelector->AddLabel("jump", kInterval_None);
    mChangeQuantizeSelector->AddLabel("switch", kInterval_Free);
@@ -160,10 +175,16 @@ void SongBuilder::DrawModule()
    DrawTextNormal("scenes:", gridStartX, kGridStartY + kTargetTabHeightTop - 1);
 
    for (int i = 0; i < (int)mScenes.size(); ++i)
-      mScenes[i]->Draw(this, gridStartX, kGridStartY + kTargetTabHeightTop + kSpacingY + i * (kRowHeight + kSpacingY), i);
+   {
+      if (mScenes[i] != nullptr)
+         mScenes[i]->Draw(this, gridStartX, kGridStartY + kTargetTabHeightTop + kSpacingY + i * (kRowHeight + kSpacingY), i);
+   }
 
    for (int i = 0; i < (int)mTargets.size(); ++i)
-      mTargets[i]->Draw(gridStartX + kSceneTabWidth + i * (kColumnWidth + kSpacingX), kGridStartY, (int)mScenes.size());
+   {
+      if (mTargets[i] != nullptr)
+         mTargets[i]->Draw(gridStartX + kSceneTabWidth + i * (kColumnWidth + kSpacingX), kGridStartY, (int)mScenes.size());
+   }
 
    bool sequenceComplete = false;
    for (int i = 0; i < kMaxSequencerScenes; ++i)
@@ -428,6 +449,102 @@ void SongBuilder::PlaySequence(double time, int startIndex)
       mSequencePaused = false;
       mSequenceStartQueued = true;
    }
+}
+
+bool SongBuilder::OnPush2Control(Push2Control* push2, MidiMessageType type, int controlIndex, float midiValue)
+{
+   if (type == kMidiMessage_Note)
+   {
+      if (controlIndex >= 36 && controlIndex <= 99 && midiValue > 0)
+      {
+         int gridIndex = controlIndex - 36;
+         int x = gridIndex % 8;
+         int y = 7 - gridIndex / 8;
+
+         if (x == 0)
+         {
+            if (mUseSequencer)
+            {
+               switch (y)
+               {
+                  case 0: mPlaySequenceButton->SetValue(1, gTime); break;
+                  case 1: mStopSequenceButton->SetValue(1, gTime); break;
+                  default: break;
+               }
+            }
+         }
+         else
+         {
+            int index = y + (x - 1) * 8;
+            if (index < mScenes.size())
+               mScenes[index]->mActivateButton->SetValue(1, gTime);
+         }
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+void SongBuilder::UpdatePush2Leds(Push2Control* push2)
+{
+   for (int x = 0; x < 8; ++x)
+   {
+      for (int y = 0; y < 8; ++y)
+      {
+         int pushColor = 0;
+         int pushColorBlink = -1;
+
+         if (x == 0)
+         {
+            if (mUseSequencer)
+            {
+               switch (y)
+               {
+                  case 0:
+                     pushColor = mSequenceStepIndex == -1 ? 86 : 126;
+                     if (mSequenceStartQueued)
+                        pushColorBlink = 0;
+                     break;
+                  case 1:
+                     pushColor = mSequenceStepIndex == -1 ? 127 : 68;
+                     break;
+                  default: break;
+               }
+            }
+         }
+         else
+         {
+            int index = y + (x - 1) * 8;
+            if (index < mScenes.size())
+            {
+               if (index == mCurrentScene)
+                  pushColor = 120;
+               else
+                  pushColor = 124;
+
+               if (index == mQueuedScene)
+                  pushColorBlink = 0;
+            }
+         }
+
+         push2->SetLed(kMidiMessage_Note, x + (7 - y) * 8 + 36, pushColor, pushColorBlink);
+      }
+   }
+}
+
+bool SongBuilder::DrawToPush2Screen()
+{
+   ofPushStyle();
+   ofSetColor(255, 255, 255);
+   if (mQueuedScene >= 0 && mQueuedScene < mScenes.size())
+      DrawTextNormal("queued: " + mScenes[mQueuedScene]->mName, 100, -2);
+   else if (mCurrentScene >= 0 && mCurrentScene < mScenes.size())
+      DrawTextNormal("scene: " + mScenes[mCurrentScene]->mName, 100, -2);
+   ofPopStyle();
+
+   return false;
 }
 
 void SongBuilder::ButtonClicked(ClickButton* button, double time)
@@ -696,10 +813,10 @@ void SongBuilder::LoadLayout(const ofxJSONElement& moduleInfo)
       mScenes.push_back(new SongScene("off"));
       mScenes.push_back(new SongScene("intro"));
       mScenes.push_back(new SongScene("verse"));
+      mScenes.push_back(new SongScene("prechorus"));
       mScenes.push_back(new SongScene("chorus"));
       mScenes.push_back(new SongScene("bridge"));
       mScenes.push_back(new SongScene("outro"));
-      mScenes.push_back(new SongScene("done"));
       for (auto* scene : mScenes)
          scene->CreateUIControls(this);
 
@@ -720,6 +837,7 @@ void SongBuilder::SaveState(FileStreamOut& out)
    out << (int)mTargets.size();
    for (auto* target : mTargets)
    {
+      out << target->mId;
       target->mCable->SaveState(out);
       out << (int)target->mDisplayType;
    }
@@ -750,6 +868,8 @@ void SongBuilder::LoadState(FileStreamIn& in, int rev)
    for (int i = 0; i < numTargets; ++i)
    {
       mTargets[i] = new ControlTarget();
+      if (rev >= 1)
+         in >> mTargets[i]->mId;
       mTargets[i]->CreateUIControls(this);
       mTargets[i]->mCable->LoadState(in);
       int displayType;
@@ -852,6 +972,7 @@ void SongBuilder::SongScene::CreateUIControls(SongBuilder* owner)
    mContextMenu->AddLabel("delete", (int)ContextMenuItems::kDelete);
    mContextMenu->AddLabel("move up", (int)ContextMenuItems::kMoveUp);
    mContextMenu->AddLabel("move down", (int)ContextMenuItems::kMoveDown);
+   mContextMenu->SetCableTargetable(false);
    mContextMenu->SetDisplayStyle(DropdownDisplayStyle::kHamburger);
 }
 
@@ -944,6 +1065,19 @@ void SongBuilder::SongScene::CleanUp()
 
 void SongBuilder::ControlTarget::CreateUIControls(SongBuilder* owner)
 {
+   if (mId == -1)
+   {
+      //find unique id
+      mId = 0;
+      for (auto* target : owner->mTargets)
+      {
+         if (target != this && target != nullptr && mId <= target->mId)
+            mId = target->mId + 1;
+      }
+   }
+
+   mOwner = owner;
+
    mCable = new PatchCableSource(owner, kConnectionType_UIControl);
    owner->AddPatchCableSource(mCable);
    mCable->SetAllowMultipleTargets(true);
@@ -951,13 +1085,23 @@ void SongBuilder::ControlTarget::CreateUIControls(SongBuilder* owner)
    mMoveLeftButton = new ClickButton(owner, "move left", -1, -1, ButtonDisplayStyle::kArrowLeft);
    mMoveRightButton = new ClickButton(owner, "move right", -1, -1, ButtonDisplayStyle::kArrowRight);
    mCycleDisplayTypeButton = new ClickButton(owner, "type", -1, -1);
+   mColorSelector = new DropdownList(owner, ("color" + ofToString(mId)).c_str(), -1, -1, &mColorIndex, 25);
+
+   // Block modulation cables from connecting to these controls as it behaves wrong (and saves incorrectly) except for the color button, that one is fun and works.
+   mMoveLeftButton->SetCableTargetable(false);
+   mMoveRightButton->SetCableTargetable(false);
+   mCycleDisplayTypeButton->SetCableTargetable(false);
+
+   for (int i = 0; i < (int)owner->mColors.size(); ++i)
+      mColorSelector->AddLabel(owner->mColors[i].name, i);
+   mColorSelector->SetDrawTriangle(false);
 }
 
 void SongBuilder::ControlTarget::Draw(float x, float y, int numRows)
 {
    ofPushStyle();
    ofFill();
-   ofSetColor(ofColor(130, 130, 130, 130));
+   ofSetColor(GetColor() * .7f);
    ofRect(x, y, kColumnWidth, kTargetTabHeightTop);
    ofRect(x, y + kTargetTabHeightTop + kSpacingY + numRows * (kRowHeight + kSpacingY), kColumnWidth, kTargetTabHeightBottom);
    ofPopStyle();
@@ -981,6 +1125,7 @@ void SongBuilder::ControlTarget::Draw(float x, float y, int numRows)
    }
    float bottomY = y + kTargetTabHeightTop + kSpacingY + numRows * (kRowHeight + kSpacingY);
    mCable->SetManualPosition(x + kColumnWidth * .5f, bottomY + 5);
+   mCable->SetColor(GetColor());
    mMoveLeftButton->SetPosition(x, bottomY - 3);
    if (gHoveredUIControl == mMoveLeftButton)
       mMoveLeftButton->Draw();
@@ -990,6 +1135,9 @@ void SongBuilder::ControlTarget::Draw(float x, float y, int numRows)
    mCycleDisplayTypeButton->SetPosition(x, y + kTargetTabHeightTop - 15);
    if (gHoveredUIControl == mCycleDisplayTypeButton)
       mCycleDisplayTypeButton->Draw();
+   mColorSelector->SetPosition(x + 25, y + kTargetTabHeightTop - 15);
+   if (gHoveredUIControl == mColorSelector)
+      mColorSelector->Draw();
 }
 
 IUIControl* SongBuilder::ControlTarget::GetTarget() const
@@ -1017,6 +1165,7 @@ void SongBuilder::ControlTarget::CleanUp()
    mMoveLeftButton->RemoveFromOwner();
    mMoveRightButton->RemoveFromOwner();
    mCycleDisplayTypeButton->RemoveFromOwner();
+   mColorSelector->RemoveFromOwner();
 }
 
 void SongBuilder::ControlValue::CreateUIControls(SongBuilder* owner)
@@ -1050,7 +1199,7 @@ void SongBuilder::ControlValue::Draw(float x, float y, int sceneIndex, ControlTa
 {
    ofPushStyle();
    ofFill();
-   ofSetColor(ofColor(130, 130, 130, 130));
+   ofSetColor(target->GetColor() * .7f);
    ofRect(x, y + 2, kColumnWidth, kRowHeight - 4);
    ofPopStyle();
 

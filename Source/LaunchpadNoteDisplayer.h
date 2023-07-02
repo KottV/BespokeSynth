@@ -38,7 +38,9 @@ class LaunchpadNoteDisplayer : public NoteEffectBase, public IDrawableModule
 public:
    LaunchpadNoteDisplayer();
    static IDrawableModule* Create() { return new LaunchpadNoteDisplayer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void SetLaunchpad(LaunchpadKeyboard* launchpad) { mLaunchpad = launchpad; }
 
@@ -48,6 +50,7 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return true; }
 
 private:
    //IDrawableModule
@@ -58,7 +61,6 @@ private:
       width = 80;
       height = 0;
    }
-   bool Enabled() const override { return true; }
 
    LaunchpadKeyboard* mLaunchpad{ nullptr };
 };

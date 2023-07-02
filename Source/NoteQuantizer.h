@@ -39,9 +39,13 @@ public:
    NoteQuantizer();
    virtual ~NoteQuantizer();
    static IDrawableModule* Create() { return new NoteQuantizer(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return true; }
+
    void CreateUIControls() override;
    void Init() override;
-
+   void SetEnabled(bool enabled) override { mEnabled = enabled; }
 
    //INoteReceiver
    void PlayNote(double time, int pitch, int velocity, int voiceIdx = -1, ModulationParameters modulation = ModulationParameters()) override;
@@ -53,6 +57,8 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -61,7 +67,6 @@ private:
       width = 80;
       height = 40;
    }
-   bool Enabled() const override { return true; }
    void OnEvent(double time, float strength);
 
    struct InputInfo

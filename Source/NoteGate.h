@@ -35,7 +35,9 @@ public:
    NoteGate();
    virtual ~NoteGate();
    static IDrawableModule* Create() { return new NoteGate(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -47,11 +49,12 @@ public:
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return true; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& width, float& height) override;
-   bool Enabled() const override { return true; }
 
    bool mGate{ true };
    Checkbox* mGateCheckbox{ nullptr };

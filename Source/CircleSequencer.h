@@ -77,7 +77,9 @@ public:
    CircleSequencer();
    ~CircleSequencer();
    static IDrawableModule* Create() { return new CircleSequencer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -102,6 +104,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -111,7 +115,6 @@ private:
       height = 200;
    }
    void OnClicked(float x, float y, bool right) override;
-   bool Enabled() const override { return mEnabled; }
 
    std::vector<CircleSequencerRing*> mCircleSequencerRings;
 };

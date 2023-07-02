@@ -52,7 +52,7 @@ public:
    void RemoveRemoteController() { --mRemoteControlCount; }
    virtual void SetFromMidiCC(float slider, double time, bool setViaModulator) = 0;
    virtual float GetValueForMidiCC(float slider) const { return 0; }
-   virtual void SetValue(float value, double time) = 0;
+   virtual void SetValue(float value, double time, bool forceUpdate = false) = 0;
    virtual void SetValueDirect(float value, double time) { SetValue(value, time); } //override if you need special control here
    virtual float GetValue() const { return 0; }
    virtual float GetMidiValue() const { return 0; }
@@ -79,6 +79,8 @@ public:
    virtual void Halve() {}
    virtual void ResetToOriginal() {}
    virtual void Increment(float amount) {}
+   void SetCableTargetable(bool targetable) { mCableTargetable = targetable; }
+   bool GetCableTargetable() const { return mCableTargetable; }
    void SetNoHover(bool noHover) { mNoHover = noHover; }
    virtual bool GetNoHover() const { return mNoHover; }
    virtual bool AttemptTextInput() { return false; }
@@ -106,6 +108,7 @@ protected:
    virtual ~IUIControl();
 
    int mRemoteControlCount{ 0 };
+   bool mCableTargetable{ true };
    bool mNoHover{ false };
    bool mShouldSaveState{ true };
 

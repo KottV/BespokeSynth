@@ -46,12 +46,16 @@ public:
    PlaySequencer();
    ~PlaySequencer();
    static IDrawableModule* Create() { return new PlaySequencer(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
+   //IDrawableModule
    void Init() override;
-
+   bool IsResizable() const override { return true; }
+   void Resize(float w, float h) override;
    void SetEnabled(bool enabled) override { mEnabled = enabled; }
 
    //IClickable
@@ -85,17 +89,15 @@ public:
    void LoadState(FileStreamIn& in, int rev) override;
    int GetModuleSaveStateRev() const override { return 0; }
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
-   void GetModuleDimensions(float& width, float& height) override
-   {
-      width = mWidth;
-      height = mHeight;
-   }
-   bool Enabled() const override { return mEnabled; }
+   void GetModuleDimensions(float& w, float& h) override;
    void OnClicked(float x, float y, bool right) override;
 
+   void SetGridSize(float w, float h);
    int GetStep(double time);
    void UpdateInterval();
    void UpdateNumMeasures(int oldNumMeasures);
@@ -149,7 +151,7 @@ private:
       ClickButton* mStoreButton{ nullptr };
       ClickButton* mLoadButton{ nullptr };
       float mNumMeasures{ 1 };
-      std::array<float, MAX_GRID_SIZE * MAX_GRID_SIZE> mData{};
+      std::array<float, MAX_GRID_COLS * MAX_GRID_ROWS> mData{};
       bool mHasSequence{ false };
    };
 

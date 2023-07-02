@@ -40,7 +40,9 @@ public:
    ModulatorExpression();
    virtual ~ModulatorExpression();
    static IDrawableModule* Create() { return new ModulatorExpression(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -60,11 +62,12 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
    void GetModuleDimensions(float& w, float& h) override;
-   bool Enabled() const override { return mEnabled; }
 
    float mExpressionInput{ 0 };
    FloatSlider* mExpressionInputSlider{ nullptr };

@@ -39,6 +39,9 @@ public:
    MidiClockIn();
    virtual ~MidiClockIn();
    static IDrawableModule* Create() { return new MidiClockIn(); }
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return false; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
    void Init() override;
@@ -56,6 +59,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    void InitDevice();
    void BuildDeviceList();
@@ -63,7 +68,6 @@ private:
 
    //IDrawableModule
    void DrawModule() override;
-   bool Enabled() const override { return mEnabled; }
    void GetModuleDimensions(float& w, float& h) override
    {
       w = mWidth;
@@ -92,6 +96,7 @@ private:
    FloatSlider* mStartOffsetMsSlider{ nullptr };
    int mSmoothAmount{ kMaxHistory / 2 };
    IntSlider* mSmoothAmountSlider{ nullptr };
+   bool mObeyClockStartStop{ true };
 
    MidiDevice mDevice;
 

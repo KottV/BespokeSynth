@@ -51,15 +51,24 @@ public:
    ::ADSR* GetADSR() { return mAdsr; }
    void SpawnEnvelopeEditor();
    void SetOverrideDrawTime(double time) { mOverrideDrawTime = time; }
+   void SetDimensions(float w, float h)
+   {
+      mWidth = w;
+      mHeight = h;
+   }
    void SetShowing(bool showing) override
    {
       IUIControl::SetShowing(showing);
       UpdateSliderVisibility();
    }
+   FloatSlider* GetASlider() { return mASlider; }
+   FloatSlider* GetDSlider() { return mDSlider; }
+   FloatSlider* GetSSlider() { return mSSlider; }
+   FloatSlider* GetRSlider() { return mRSlider; }
 
    //IUIControl
    void SetFromMidiCC(float slider, double time, bool setViaModulator) override {}
-   void SetValue(float value, double time) override {}
+   void SetValue(float value, double time, bool forceUpdate = false) override {}
    bool CanBeTargetedBy(PatchCableSource* source) const override { return false; }
    void SaveState(FileStreamOut& out) override;
    void LoadState(FileStreamIn& in, bool shouldSetValue = true) override;
@@ -96,6 +105,7 @@ private:
    }
 
    void UpdateSliderVisibility();
+   ofVec2f GetDrawPoint(float time, const ADSR::EventInfo& adsrEvent);
 
    float mWidth;
    float mHeight;
@@ -103,7 +113,6 @@ private:
    float mMaxTime{ 1000 };
    bool mClick{ false };
    ::ADSR* mAdsr;
-   ::ADSR mViewAdsr; //for ADSR simulation in drawing
    ofVec2f mClickStart;
    ::ADSR mClickAdsr;
    float mClickLength{ 1000 };

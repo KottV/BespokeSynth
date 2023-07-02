@@ -40,7 +40,9 @@ public:
    PitchChorus();
    virtual ~PitchChorus();
    static IDrawableModule* Create() { return new PitchChorus(); }
-
+   static bool AcceptsAudio() { return true; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -57,6 +59,8 @@ public:
    void PlayNote(double time, int pitch, int velocity, int voiceIdx = -1, ModulationParameters modulation = ModulationParameters()) override;
    void SendCC(int control, int value, int voiceIdx = -1) override {}
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -65,7 +69,6 @@ private:
       w = 120;
       h = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    static const int kNumShifters = 5;
 

@@ -37,7 +37,9 @@ class VelocityScaler : public NoteEffectBase, public IDrawableModule, public IFl
 public:
    VelocityScaler();
    static IDrawableModule* Create() { return new VelocityScaler(); }
-
+   static bool AcceptsAudio() { return false; }
+   static bool AcceptsNotes() { return true; }
+   static bool AcceptsPulses() { return false; }
 
    void CreateUIControls() override;
 
@@ -51,6 +53,8 @@ public:
    virtual void LoadLayout(const ofxJSONElement& moduleInfo) override;
    virtual void SetUpFromSaveData() override;
 
+   bool IsEnabled() const override { return mEnabled; }
+
 private:
    //IDrawableModule
    void DrawModule() override;
@@ -59,7 +63,6 @@ private:
       width = 108;
       height = 22;
    }
-   bool Enabled() const override { return mEnabled; }
 
    float mScale{ 1 };
    FloatSlider* mScaleSlider{ nullptr };

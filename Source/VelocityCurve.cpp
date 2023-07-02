@@ -38,6 +38,7 @@ VelocityCurve::VelocityCurve()
    mEnvelopeControl.SetADSR(&mAdsr);
    mEnvelopeControl.SetViewLength(kAdsrTime);
    mEnvelopeControl.SetFixedLengthMode(true);
+   mAdsr.GetFreeReleaseLevel() = true;
    mAdsr.SetNumStages(2);
    mAdsr.GetHasSustainStage() = false;
    mAdsr.GetStageData(0).target = 0;
@@ -79,10 +80,8 @@ void VelocityCurve::PlayNote(double time, int pitch, int velocity, int voiceIdx,
          mLastInputTime = time;
 
          ComputeSliders(0);
-         mAdsr.Clear();
-         mAdsr.Start(0, 1);
-         mAdsr.Stop(kAdsrTime);
-         float val = ofClamp(mAdsr.Value(velocity / 127.0f * kAdsrTime), 0, 1);
+         ADSR::EventInfo adsrEvent(0, kAdsrTime);
+         float val = ofClamp(mAdsr.Value(velocity / 127.0f * kAdsrTime, &adsrEvent), 0, 1);
          if (val != val)
             val = 0;
          velocity = val * 127;

@@ -28,6 +28,7 @@
 #include "UserPrefsEditor.h"
 #include "ModularSynth.h"
 #include "SynthGlobals.h"
+#include "IDrawableModule.h"
 #include "UserPrefs.h"
 #include "PatchCable.h"
 #include "QwertyToPitchMapping.h"
@@ -437,13 +438,31 @@ void UserPrefsEditor::FloatSliderUpdated(FloatSlider* slider, float oldVal, doub
          ModularSynth::sBackgroundG = UserPrefs.background_g.Get();
          ModularSynth::sBackgroundB = UserPrefs.background_b.Get();
       }
+
       if (slider == UserPrefs.cable_alpha.GetSlider())
          ModularSynth::sCableAlpha = UserPrefs.cable_alpha.Get();
+
+      if (slider == UserPrefs.sHueNote.GetSlider() || UserPrefs.sHueAudio.GetSlider() || UserPrefs.sHueInstrument.GetSlider() || UserPrefs.sHueNoteSource.GetSlider() 
+          || UserPrefs.sSaturation.GetSlider() || UserPrefs.sBrightness.GetSlider() || UserPrefs.sHueProcessor.GetSlider() || UserPrefs.sHueModulator.GetSlider() || UserPrefs.sHuePulse.GetSlider())
+      {
+         IDrawableModule::sHueNote = UserPrefs.sHueNote.Get();
+         IDrawableModule::sHueAudio = UserPrefs.sHueAudio.Get();
+         IDrawableModule::sHueInstrument = UserPrefs.sHueInstrument.Get();
+         IDrawableModule::sHueNoteSource = UserPrefs.sHueNoteSource.Get();
+         IDrawableModule::sHueProcessor = UserPrefs.sHueProcessor.Get();
+         IDrawableModule::sHueModulator = UserPrefs.sHueModulator.Get();
+         IDrawableModule::sHuePulse = UserPrefs.sHuePulse.Get();
+         IDrawableModule::sSaturation = UserPrefs.sSaturation.Get();
+         IDrawableModule::sBrightness = UserPrefs.sBrightness.Get();
+      }
+
    }
 }
 
 void UserPrefsEditor::IntSliderUpdated(IntSlider* slider, int oldVal, double time)
 {
+   if (slider == UserPrefs.corner_roundness.GetSlider())
+      gCornerRoundness = static_cast<float>(UserPrefs.corner_roundness.Get()) / 10.f;
 }
 
 void UserPrefsEditor::TextEntryComplete(TextEntry* entry)

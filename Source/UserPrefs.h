@@ -37,6 +37,7 @@ class DropdownList;
 class TextEntry;
 class Checkbox;
 class FloatSlider;
+class IntSlider;
 
 enum class UserPrefCategory
 {
@@ -266,6 +267,36 @@ private:
    float mMax{ 1 };
 };
 
+class UserPrefInt : public UserPref
+{
+public:
+   UserPrefInt(std::string name, int defaultValue, int min, int max, UserPrefCategory category)
+   : mValue(defaultValue)
+   , mDefault(defaultValue)
+   , mMin(min)
+   , mMax(max)
+   {
+      RegisterUserPref(this);
+      mName = name;
+      mCategory = category;
+   }
+   void Init() override;
+   void SetUpControl(IDrawableModule* owner) override;
+   IUIControl* GetControl() override;
+   IntSlider* GetSlider() { return mSlider; }
+   int& Get() { return mValue; }
+   float GetDefault() { return mDefault; }
+   void Save(int index, ofxJSONElement& prefsJson) override;
+   bool DiffersFromSavedValue() const override;
+
+private:
+   int mValue{ 0 };
+   int mDefault{ 0 };
+   IntSlider* mSlider{ nullptr };
+   int mMin{ 0 };
+   int mMax{ 1 };
+};
+
 namespace
 {
 #if BESPOKE_MAC
@@ -345,6 +376,16 @@ public:
 #endif
       -100, 100, 5, UserPrefCategory::Graphics
    };
+   UserPrefInt corner_roundness{ "corner roundness", 10, 0, 20, UserPrefCategory::Graphics };
+   UserPrefFloat sHueNote{ "hue_note_effect", 27.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueAudio{ "hue_audio_effects", 35.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueInstrument{ "hue_synths_plugins", 94.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueNoteSource{ "hue_instruments", 222.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueProcessor{ "hue_processor", 200.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHueModulator{ "hue_modulator", 170.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sHuePulse{ "hue_pulse", 43.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sSaturation{ "modules_saturation", 92.f, 0.f, 255.f, UserPrefCategory::Graphics };
+   UserPrefFloat sBrightness{ "modules_brightness", 220.f, 0.f, 255.f, UserPrefCategory::Graphics };
 
    UserPrefString recordings_path{ "recordings_path", "recordings/", 70, UserPrefCategory::Paths };
    UserPrefString tooltips{ "tooltips", "tooltips_eng.txt", 70, UserPrefCategory::Paths };

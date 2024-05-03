@@ -27,6 +27,8 @@
 #include "SynthGlobals.h"
 #include "FileStream.h"
 #include "IDrawableModule.h"
+#include "PatchCableSource.h"
+#include "Snapshots.h"
 
 #include <cstring>
 
@@ -236,6 +238,11 @@ bool UIGrid::CanAdjustMultislider() const
 float UIGrid::GetSubdividedValue(float position) const
 {
    return ofClamp(ceil(position * mClickSubdivisions) / mClickSubdivisions, 1.0f / mClickSubdivisions, 1);
+}
+
+bool UIGrid::CanBeTargetedBy(PatchCableSource* source) const
+{
+   return source->GetConnectionType() == kConnectionType_UIControl && dynamic_cast<Snapshots*>(source->GetOwner()) != nullptr;
 }
 
 void UIGrid::OnClicked(float x, float y, bool right)
@@ -506,16 +513,6 @@ void UIGrid::SetVal(int col, int row, float val, bool notifyListener)
       if (notifyListener && mListener)
          mListener->GridUpdated(this, col, row, val, oldValue);
    }
-}
-
-float UIGrid::GetValRefactor(int row, int col)
-{
-   return GetVal(col, row);
-}
-
-void UIGrid::SetValRefactor(int row, int col, float val)
-{
-   SetVal(col, row, val);
 }
 
 void UIGrid::SetHighlightCol(double time, int col)

@@ -160,9 +160,9 @@ public:
       // but be careful - it will be called on the audio thread, not the GUI thread.
    }
 
-   void audioDeviceIOCallbackWithContext(const float** inputChannelData,
+   void audioDeviceIOCallbackWithContext(const float* const* inputChannelData,
                                          int numInputChannels,
-                                         float** outputChannelData,
+                                         float* const* outputChannelData,
                                          int numOutputChannels,
                                          int numSamples,
                                          const AudioIODeviceCallbackContext& context) override
@@ -323,7 +323,8 @@ public:
          }
       }
 
-      startTimerHz(60);
+      UserPrefs.LastTargetFramerate = UserPrefs.target_framerate.Get();
+      startTimerHz(UserPrefs.target_framerate.Get());
    }
 
    void shutdown() override
@@ -343,6 +344,13 @@ public:
          return;
 
       mSynth.LockRender(true);
+
+      if (UserPrefs.LastTargetFramerate != UserPrefs.target_framerate.Get())
+      {
+         stopTimer();
+         UserPrefs.LastTargetFramerate = UserPrefs.target_framerate.Get();
+         startTimerHz(UserPrefs.target_framerate.Get());
+      }
 
       juce::Point<int> mouse = Desktop::getMousePosition();
       mouse -= mScreenPosition;

@@ -46,6 +46,7 @@ public:
 
    std::string GetTitleLabel() const override;
    void CreateUIControls() override;
+   void SetEnabled(bool enabled) override { mEnabled = enabled; }
 
    ModuleContainer* GetContainer() override { return &mModuleContainer; }
 
@@ -53,6 +54,7 @@ public:
    bool ShouldClipContents() override { return false; }
 
    void ButtonClicked(ClickButton* button, double time) override;
+   void CheckboxUpdated(Checkbox* checkbox, double time) override;
 
    void LoadLayout(const ofxJSONElement& moduleInfo) override;
    void SaveLayout(ofxJSONElement& moduleInfo) override;

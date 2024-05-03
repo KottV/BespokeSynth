@@ -41,8 +41,9 @@ public:
 
    void SetOwner(IDrawableModule* owner) { mOwner = owner; }
    IDrawableModule* GetOwner() const { return mOwner; }
-   void Draw();
-   void DrawPatchCables(bool parentMinimized);
+   void DrawContents();
+   void DrawModules();
+   void DrawPatchCables(bool parentMinimized, bool inFront);
    void DrawUnclipped();
    void PostRender();
    void Poll();
@@ -65,6 +66,7 @@ public:
    void AddModule(IDrawableModule* module);
    void TakeModule(IDrawableModule* module);
    void DeleteModule(IDrawableModule* module, bool fail = true);
+   static void DeleteCablesForControl(const IUIControl* control);
    IDrawableModule* FindModule(std::string name, bool fail = true);
    IUIControl* FindUIControl(std::string path);
    bool IsHigherThan(IDrawableModule* checkFor, IDrawableModule* checkAgainst) const;

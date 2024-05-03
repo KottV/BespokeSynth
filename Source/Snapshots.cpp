@@ -28,6 +28,7 @@
 #include "Slider.h"
 #include "ofxJSONElement.h"
 #include "PatchCableSource.h"
+#include "juce_core/juce_core.h"
 
 std::vector<IUIControl*> Snapshots::sSnapshotHighlightControls;
 
@@ -348,6 +349,14 @@ void Snapshots::SetSnapshot(int idx, double time)
             TextEntry* textEntry = dynamic_cast<TextEntry*>(control);
             if (textEntry && textEntry->GetTextEntryType() == kTextEntry_Text)
                textEntry->SetText(i->mString);
+
+            if (control->ShouldSerializeForSnapshot() && !i->mString.empty())
+            {
+               juce::MemoryBlock outputStream;
+               outputStream.fromBase64Encoding(i->mString);
+               FileStreamIn in(outputStream);
+               control->LoadState(in, true);
+            }
          }
          else
          {
@@ -723,11 +732,21 @@ void Snapshots::SaveState(FileStreamOut& out)
 
    out << (int)mSnapshotModules.size();
    for (auto module : mSnapshotModules)
-      out << module->Path();
+   {
+      if (module != nullptr && !module->IsDeleted())
+         out << module->Path();
+      else
+         out << std::string("");
+   }
 
    out << (int)mSnapshotControls.size();
    for (auto control : mSnapshotControls)
-      out << control->Path();
+   {
+      if (control != nullptr && !control->GetModuleParent()->IsDeleted())
+         out << control->Path();
+      else
+         out << std::string("");
+   }
 
    out << mCurrentSnapshot;
 }
@@ -787,22 +806,28 @@ void Snapshots::LoadState(FileStreamIn& in, int rev)
    for (int i = 0; i < size; ++i)
    {
       in >> path;
-      IDrawableModule* module = TheSynth->FindModule(path);
-      if (module)
+      if (path != "")
       {
-         mSnapshotModules.push_back(module);
-         mModuleCable->AddPatchCable(module);
+         IDrawableModule* module = TheSynth->FindModule(path);
+         if (module)
+         {
+            mSnapshotModules.push_back(module);
+            mModuleCable->AddPatchCable(module);
+         }
       }
    }
    in >> size;
    for (int i = 0; i < size; ++i)
    {
       in >> path;
-      IUIControl* control = TheSynth->FindUIControl(path);
-      if (control)
+      if (path != "")
       {
-         mSnapshotControls.push_back(control);
-         mUIControlCable->AddPatchCable(control);
+         IUIControl* control = TheSynth->FindUIControl(path);
+         if (control)
+         {
+            mSnapshotControls.push_back(control);
+            mUIControlCable->AddPatchCable(control);
+         }
       }
    }
 
@@ -895,4 +920,14 @@ Snapshots::Snapshot::Snapshot(IUIControl* control, Snapshots* snapshots)
    TextEntry* textEntry = dynamic_cast<TextEntry*>(control);
    if (textEntry && textEntry->GetTextEntryType() == kTextEntry_Text)
       mString = textEntry->GetText();
+
+   if (control->ShouldSerializeForSnapshot())
+   {
+      juce::MemoryBlock tempBlock;
+      {
+         FileStreamOut out(tempBlock);
+         control->SaveState(out);
+      }
+      mString = tempBlock.toBase64Encoding().toStdString();
+   }
 }

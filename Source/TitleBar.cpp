@@ -297,6 +297,11 @@ void TitleBar::ListLayouts()
    mSaveLayoutButton->PositionTo(mLoadLayoutDropdown, kAnchor_Right);
 }
 
+void TitleBar::Poll()
+{
+   mHelpDisplay->Poll();
+}
+
 void TitleBar::OnClicked(float x, float y, bool right)
 {
    IDrawableModule::OnClicked(x, y, right);
@@ -338,7 +343,7 @@ void TitleBar::DrawModule()
    if (gHoveredModule == this && mLeftCornerHovered)
       ofSetColor(ofColor::lerp(ofColor::black, ofColor::white, ofMap(sin(gTime / 1000 * PI * 2), -1, 1, .7f, .9f)));
    DrawTextBold("bespoke", 2, 28, 36);
-#if BESPOKE_NIGHTLY
+#if BESPOKE_NIGHTLY && !BESPOKE_SUPPRESS_NIGHTLY_LABEL
    DrawTextNormal("nightly", 90, 35, 10);
 #endif
 #if DEBUG
@@ -502,9 +507,9 @@ void TitleBar::DrawModuleUnclipped()
          ofVec2f pos(50, ofGetHeight() / GetOwningContainer()->GetDrawScale() - 100);
          const float kWidth = 600;
          const float kHeight = 70;
-         ofSetColor(80, 80, 80);
+         ofSetColor(80, 80, 80, 150);
          ofRect(pos.x, pos.y, kWidth, kHeight);
-         ofSetColor(120, 120, 120);
+         ofSetColor(120, 120, 120, 150);
          ofRect(pos.x, pos.y, kWidth * drawControl->GetMidiValue(), kHeight);
          ofSetColor(255, 255, 255);
          DrawTextBold(displayString, pos.x + 20, pos.y + 50, 40);

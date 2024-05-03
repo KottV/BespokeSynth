@@ -78,7 +78,7 @@ public:
    void RenderUnclipped();
    virtual void PostRender() {}
    void DrawFrame(float width, float height, bool drawModule, float& titleBarHeight, float& highlight);
-   void DrawPatchCables(bool parentMinimized);
+   void DrawPatchCables(bool parentMinimized, bool inFront);
    bool CheckNeedsDraw() override;
    virtual bool AlwaysOnTop() { return false; }
    void ToggleMinimized();
@@ -94,7 +94,7 @@ public:
    virtual void KeyReleased(int key);
    void DrawConnection(IClickable* target);
    void AddUIControl(IUIControl* control);
-   void RemoveUIControl(IUIControl* control);
+   void RemoveUIControl(IUIControl* control, bool cleanUpReferences = true);
    void AddUIGrid(UIGrid* grid);
    IUIControl* FindUIControl(const char* name, bool fail = true) const;
    std::vector<IUIControl*> GetUIControls() const;
@@ -102,7 +102,7 @@ public:
    virtual void OnUIControlRequested(const char* name) {}
    void AddChild(IDrawableModule* child);
    void RemoveChild(IDrawableModule* child);
-   IDrawableModule* FindChild(const char* name) const;
+   IDrawableModule* FindChild(const char* name, bool fail) const;
    void GetDimensions(float& width, float& height) override;
    virtual void GetModuleDimensions(float& width, float& height)
    {
@@ -162,6 +162,7 @@ public:
    bool CanReceiveAudio() { return mCanReceiveAudio; }
    bool CanReceiveNotes() { return mCanReceiveNotes; }
    bool CanReceivePulses() { return mCanReceivePulses; }
+   virtual bool ShouldSuppressAutomaticOutputCable() { return false; }
 
    virtual void CheckboxUpdated(Checkbox* checkbox, double time) {}
 
@@ -191,10 +192,9 @@ public:
    //IPatchable
    PatchCableSource* GetPatchCableSource(int index = 0) override
    {
-      if (index == 0 && (mMainPatchCableSource != nullptr || mPatchCableSources.empty()))
-         return mMainPatchCableSource;
-      else
+      if (index < mPatchCableSources.size())
          return mPatchCableSources[index];
+      return nullptr;
    }
    std::vector<PatchCableSource*> GetPatchCableSources() { return mPatchCableSources; }
 
@@ -219,10 +219,13 @@ protected:
    void OnClicked(float x, float y, bool right) override;
    bool MouseMoved(float x, float y) override;
 
+   void AddDebugLine(std::string text, int maxLines);
+
    ModuleSaveData mModuleSaveData;
    Checkbox* mEnabledCheckbox{ nullptr };
    bool mEnabled{ true };
    ModuleCategory mModuleCategory{ ModuleCategory::kModuleCategory_Unknown };
+   std::string mDebugDisplayText;
 
 private:
    virtual void PreDrawModule() {}
@@ -257,10 +260,10 @@ private:
    bool mCanReceiveAudio{ false };
    bool mCanReceiveNotes{ false };
    bool mCanReceivePulses{ false };
+   IKeyboardFocusListener* mKeyboardFocusListener{ nullptr };
 
    ofMutex mSliderMutex;
 
-   PatchCableSource* mMainPatchCableSource{ nullptr };
    std::vector<PatchCableSource*> mPatchCableSources;
 };
 

@@ -39,7 +39,11 @@ class ITimeListener
 public:
    virtual ~ITimeListener() {}
    virtual void OnTimeEvent(double time) = 0;
-   int mTransportPriority{ 100 };
+   static constexpr int kDefaultTransportPriority = 100;
+   static constexpr int kTransportPriorityEarly = 0;
+   static constexpr int kTransportPriorityLate = 200;
+   static constexpr int kTransportPriorityVeryEarly = -1000;
+   int mTransportPriority{ kDefaultTransportPriority };
 };
 
 enum NoteInterval
@@ -180,12 +184,13 @@ public:
 
    bool IsEnabled() const override { return true; }
 
+   static bool IsTripletInterval(NoteInterval interval);
+
 private:
    void UpdateListeners(double jumpMs);
    double Swing(double measurePos);
    double SwingBeat(double pos);
    void Nudge(double amount);
-   void AdjustTempo(double amount);
    void SetRandomTempo();
    double GetMeasureTimeInternal(double time) const;
 
@@ -222,6 +227,7 @@ private:
    int mQueuedMeasure{ -1 };
    int mJumpFromMeasure{ -1 };
    bool mWantSetRandomTempo{ false };
+   float mNudgeFactor{ 0 };
 
    std::list<TransportListenerInfo> mListeners;
    std::list<IAudioPoller*> mAudioPollers;

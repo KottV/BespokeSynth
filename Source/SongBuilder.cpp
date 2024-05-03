@@ -65,7 +65,7 @@ SongBuilder::SongBuilder()
    mColors.push_back(TargetColor("purple", ofColor::purple * kColorDim));
    mColors.push_back(TargetColor("magenta", ofColor::magenta * kColorDim));
 
-   mTransportPriority = -1000;
+   mTransportPriority = ITimeListener::kTransportPriorityVeryEarly;
 }
 
 void SongBuilder::Init()
@@ -187,6 +187,7 @@ void SongBuilder::DrawModule()
    }
 
    bool sequenceComplete = false;
+   int sequenceLength = 0;
    for (int i = 0; i < kMaxSequencerScenes; ++i)
    {
       bool show = mUseSequencer && !sequenceComplete;
@@ -213,7 +214,25 @@ void SongBuilder::DrawModule()
       }
 
       if (mSequencerSceneId[i] < 0)
+      {
+         if (show && !sequenceComplete)
+         {
+            ofRectangle rect = mSequencerStepLengthEntry[i]->GetRect(K(local));
+            int sequenceLengthSeconds = int(sequenceLength * TheTransport->MsPerBar() / 1000);
+            int sequenceLengthMinutes = sequenceLengthSeconds / 60;
+            sequenceLengthSeconds %= 60;
+            std::string lengthTime = ofToString(sequenceLengthMinutes) + ":";
+            if (sequenceLengthSeconds < 10)
+               lengthTime += "0"; //zero pad
+            lengthTime += ofToString(sequenceLengthSeconds);
+            DrawTextNormal(ofToString(sequenceLength) + " (" + lengthTime + ")", rect.x, rect.y + 12);
+         }
          sequenceComplete = true;
+      }
+      else if (!sequenceComplete)
+      {
+         sequenceLength += mSequencerStepLength[i];
+      }
    }
 
    if (ShowSongSequencer() && mSequenceStepIndex != -1)
@@ -299,7 +318,8 @@ void SongBuilder::OnTimeEvent(double time)
          else
          {
             SetActiveSceneById(time, mSequencerSceneId[mSequenceStepIndex]);
-            mWantResetClock = true;
+            if (mResetOnSceneChange)
+               mWantResetClock = true;
          }
       }
    }
@@ -808,6 +828,8 @@ void SongBuilder::IntSliderUpdated(IntSlider* slider, int oldVal, double time)
 
 void SongBuilder::LoadLayout(const ofxJSONElement& moduleInfo)
 {
+   mModuleSaveData.LoadBool("reset_transport_every_sequencer_scene", moduleInfo, true);
+
    if (IsSpawningOnTheFly(moduleInfo))
    {
       mScenes.push_back(new SongScene("off"));
@@ -828,6 +850,7 @@ void SongBuilder::LoadLayout(const ofxJSONElement& moduleInfo)
 
 void SongBuilder::SetUpFromSaveData()
 {
+   mResetOnSceneChange = mModuleSaveData.GetBool("reset_transport_every_sequencer_scene");
 }
 
 void SongBuilder::SaveState(FileStreamOut& out)

@@ -53,7 +53,7 @@ void Transport::SetRandomTempo()
 void Transport::CreateUIControls()
 {
    IDrawableModule::CreateUIControls();
-   mTempoSlider = new FloatSlider(this, "tempo", 5, 4, 93, 15, &mTempo, 1, 225);
+   mTempoSlider = new FloatSlider(this, "tempo", 5, 4, 93, 15, &mTempo, 20, 225);
    mIncreaseTempoButton = new ClickButton(this, " + ", 118, 4);
    mDecreaseTempoButton = new ClickButton(this, " - ", 101, 4);
    mSwingSlider = new FloatSlider(this, "swing", 5, 22, 93, 15, &mSwing, .5f, .7f);
@@ -114,15 +114,23 @@ void Transport::KeyPressed(int key, bool isRepeat)
    IDrawableModule::KeyPressed(key, isRepeat);
 }
 
-void Transport::AdjustTempo(double amount)
-{
-   SetTempo(MAX(1, GetTempo() + amount));
-}
-
 void Transport::Advance(double ms)
 {
-   double amount = ms / MsPerBar();
+   if (mNudgeFactor != 0)
+   {
+      const float kNudgePower = .05f;
+      float nudgeScale = (1 + mNudgeFactor * kNudgePower);
 
+      const float kRamp = .005f;
+      if (mNudgeFactor > 0)
+         mNudgeFactor = MAX(0, mNudgeFactor - ms * kRamp);
+      if (mNudgeFactor < 0)
+         mNudgeFactor = MIN(0, mNudgeFactor + ms * kRamp);
+
+      ms *= nudgeScale;
+   }
+
+   double amount = ms / MsPerBar();
    assert(amount > 0);
 
    double oldMeasureTime = mMeasureTime;
@@ -195,7 +203,7 @@ double Transport::SwingBeat(double pos)
 
 void Transport::Nudge(double amount)
 {
-   mMeasureTime += amount;
+   mNudgeFactor += amount;
 }
 
 void Transport::DrawModule()
@@ -251,6 +259,11 @@ void Transport::DrawModule()
    }
    ofEndShape();
    ofRect(0, h - Swing(measurePos) * h, 4, 1);
+
+   float nudgeMinX = mNudgeBackButton->GetRect(true).getMinX();
+   float nudgeMaxX = mNudgeForwardButton->GetRect(true).getMaxX();
+   float nudgeX = ofLerp(nudgeMinX, nudgeMaxX, (mNudgeFactor / 15) + .5f);
+   ofLine(nudgeX, mNudgeBackButton->GetRect(true).getMinY(), nudgeX, mNudgeBackButton->GetRect(true).getMaxY());
 }
 
 void Transport::Reset()
@@ -260,6 +273,9 @@ void Transport::Reset()
    else
       mMeasureTime = .99f;
    SetQueuedMeasure(NextBufferTime(true), 0);
+
+   if (TheSynth->IsAudioPaused())
+      TheSynth->SetAudioPaused(false);
 }
 
 void Transport::ButtonClicked(ClickButton* button, double time)
@@ -267,13 +283,13 @@ void Transport::ButtonClicked(ClickButton* button, double time)
    if (button == mResetButton)
       Reset();
    if (button == mNudgeBackButton)
-      Nudge(-.03);
+      Nudge(-1);
    if (button == mNudgeForwardButton)
-      Nudge(.03);
+      Nudge(1);
    if (button == mIncreaseTempoButton)
-      AdjustTempo(1);
+      SetTempo(floor(mTempo + 1));
    if (button == mDecreaseTempoButton)
-      AdjustTempo(-1);
+      SetTempo(ceil(mTempo - 1));
    if (button == mPlayPauseButton)
       TheSynth->SetAudioPaused(!TheSynth->IsAudioPaused());
 }
@@ -704,6 +720,14 @@ void Transport::CheckboxUpdated(Checkbox* checkbox, double time)
 
 void Transport::DropdownUpdated(DropdownList* list, int oldVal, double time)
 {
+}
+
+//static
+bool Transport::IsTripletInterval(NoteInterval interval)
+{
+   if (interval == kInterval_2nt || interval == kInterval_4nt || interval == kInterval_8nt || interval == kInterval_16nt || interval == kInterval_32nt)
+      return true;
+   return false;
 }
 
 void Transport::LoadLayout(const ofxJSONElement& moduleInfo)

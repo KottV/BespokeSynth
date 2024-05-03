@@ -102,10 +102,10 @@ public:
    void AddExtraPoller(IPollable* poller);
    void RemoveExtraPoller(IPollable* poller);
 
-   void AudioOut(float** output, int bufferSize, int nChannels);
-   void AudioIn(const float** input, int bufferSize, int nChannels);
+   void AudioOut(float* const* output, int bufferSize, int nChannels);
+   void AudioIn(const float* const* input, int bufferSize, int nChannels);
 
-   void OnConsoleInput();
+   void OnConsoleInput(std::string command = "");
    void ClearConsoleInput();
 
    bool IsReady();
@@ -286,10 +286,11 @@ public:
    static float sBackgroundR;
    static float sBackgroundG;
    static float sBackgroundB;
+   static float sCableAlpha;
 
    static int sLoadingFileSaveStateRev;
    static int sLastLoadedFileSaveStateRev;
-   static constexpr int kSaveStateRev = 425;
+   static constexpr int kSaveStateRev = 426;
 
 private:
    void ResetLayout();

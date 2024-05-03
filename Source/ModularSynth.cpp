@@ -62,6 +62,7 @@ float ModularSynth::sBackgroundLissajousB = 0.418f;
 float ModularSynth::sBackgroundR = 0.09f;
 float ModularSynth::sBackgroundG = 0.09f;
 float ModularSynth::sBackgroundB = 0.09f;
+float ModularSynth::sCableAlpha = 1.0f;
 int ModularSynth::sLoadingFileSaveStateRev = ModularSynth::kSaveStateRev;
 int ModularSynth::sLastLoadedFileSaveStateRev = ModularSynth::kSaveStateRev;
 std::thread::id ModularSynth::sAudioThreadId;
@@ -263,6 +264,9 @@ void ModularSynth::Setup(juce::AudioDeviceManager* globalAudioDeviceManager, juc
    sBackgroundR = UserPrefs.background_r.Get();
    sBackgroundG = UserPrefs.background_g.Get();
    sBackgroundB = UserPrefs.background_b.Get();
+
+   sCableAlpha = UserPrefs.cable_alpha.Get();
+
    IDrawableModule::sHueNote = UserPrefs.sHueNote.Get();
    IDrawableModule::sHueAudio = UserPrefs.sHueAudio.Get();
    IDrawableModule::sHueInstrument = UserPrefs.sHueInstrument.Get();
@@ -272,6 +276,7 @@ void ModularSynth::Setup(juce::AudioDeviceManager* globalAudioDeviceManager, juc
    IDrawableModule::sHuePulse = UserPrefs.sHuePulse.Get();
    IDrawableModule::sSaturation = UserPrefs.sSaturation.Get();
    IDrawableModule::sBrightness = UserPrefs.sBrightness.Get();
+
    Time time = Time::getCurrentTime();
    if (fabsf(sBackgroundR - UserPrefs.background_r.GetDefault()) < .001f && fabsf(sBackgroundG - UserPrefs.background_g.GetDefault()) < .001f && fabsf(sBackgroundB - UserPrefs.background_b.GetDefault()) < .001f && time.getMonth() + 1 == 10 && time.getDayOfMonth() == 31)
    {
@@ -583,9 +588,31 @@ void ModularSynth::Draw(void* vg)
    TheSaveDataPanel->SetShowing(TheSaveDataPanel->GetModule());
    TheSaveDataPanel->UpdatePosition();
 
-   mModuleContainer.Draw();
-   mModuleContainer.DrawPatchCables(false);
-   mModuleContainer.DrawUnclipped();
+   mModuleContainer.DrawContents();
+
+   IClickable* dropTarget = nullptr;
+   if (PatchCable::sActivePatchCable != nullptr)
+      dropTarget = PatchCable::sActivePatchCable->GetDropTarget();
+   if (dropTarget)
+   {
+      ofPushStyle();
+
+      ofSetColor(255, 255, 255, 100);
+      ofSetLineWidth(.5f);
+      ofFill();
+      ofRectangle rect = dropTarget->GetRect();
+
+      IDrawableModule* dropTargetModule = dynamic_cast<IDrawableModule*>(dropTarget);
+      if (dropTargetModule && dropTargetModule->HasTitleBar())
+      {
+         rect.y -= IDrawableModule::TitleBarHeight();
+         rect.height += IDrawableModule::TitleBarHeight();
+      }
+
+      ofRect(rect);
+
+      ofPopStyle();
+   }
 
    for (int i = 0; i < mLissajousDrawers.size(); ++i)
    {
@@ -659,7 +686,7 @@ void ModularSynth::Draw(void* vg)
       float uiScale = mUILayerModuleContainer.GetDrawScale();
       if (uiScale < .01f)
       {
-         //safety check in case anything ever make the UI inaccessible
+         //safety check in case anything ever makes the UI inaccessible
          LogEvent("correcting UI scale", kLogEventType_Error);
          mUILayerModuleContainer.SetDrawScale(1);
          uiScale = mUILayerModuleContainer.GetDrawScale();
@@ -667,9 +694,7 @@ void ModularSynth::Draw(void* vg)
       ofScale(uiScale, uiScale, uiScale);
       ofTranslate(mUILayerModuleContainer.GetDrawOffset().x, mUILayerModuleContainer.GetDrawOffset().y);
 
-      mUILayerModuleContainer.Draw();
-      mUILayerModuleContainer.DrawPatchCables(false);
-      mUILayerModuleContainer.DrawUnclipped();
+      mUILayerModuleContainer.DrawContents();
 
       Profiler::Draw();
       DrawConsole();
@@ -1020,10 +1045,21 @@ void ModularSynth::KeyPressed(int key, bool isRepeat)
       return;
    }
 
-   if (IKeyboardFocusListener::GetActiveKeyboardFocus()) //active text entry captures all input
+   if (IKeyboardFocusListener::GetActiveKeyboardFocus() != nullptr &&
+       IKeyboardFocusListener::GetActiveKeyboardFocus()->ShouldConsumeKey(key)) //active text entry captures all input
    {
       IKeyboardFocusListener::GetActiveKeyboardFocus()->OnKeyPressed(key, isRepeat);
       return;
+   }
+
+   if (gHoveredModule != nullptr)
+   {
+      IKeyboardFocusListener* focus = dynamic_cast<IKeyboardFocusListener*>(gHoveredModule);
+      if (focus && focus->ShouldConsumeKey(key))
+      {
+         focus->OnKeyPressed(key, isRepeat);
+         return;
+      }
    }
 
    key = KeyToLower(key); //now convert to lowercase because everything else just cares about keys as buttons (unmodified by shift)
@@ -1108,8 +1144,8 @@ void ModularSynth::KeyPressed(int key, bool isRepeat)
    mModuleContainer.KeyPressed(key, isRepeat);
    mUILayerModuleContainer.KeyPressed(key, isRepeat);
 
-   if (key == '/' && !isRepeat)
-      ofToggleFullscreen();
+   //if (key == '/' && !isRepeat)
+   //   ofToggleFullscreen();
 
    if (key == 'p' && GetKeyModifiers() == kModifier_Shift && !isRepeat)
       mAudioPaused = !mAudioPaused;
@@ -1184,6 +1220,17 @@ void ModularSynth::MouseMoved(int intX, int intY)
    {
       GetDrawOffset() += (ofVec2f(intX, intY) - mLastMoveMouseScreenPos) / gDrawScale;
       mZoomer.CancelMovement();
+
+      if (UserPrefs.wrap_mouse_on_pan.Get() &&
+          (intX < 0 || intY < 0 || intX >= ofGetWidth() || intY >= ofGetHeight()))
+      {
+         int wrappedX = (intX + (int)ofGetWidth()) % (int)ofGetWidth();
+         int wrappedY = (intY + (int)ofGetHeight()) % (int)ofGetHeight();
+         Desktop::setMousePosition(juce::Point<int>(wrappedX + mMainComponent->getScreenX(),
+                                                    wrappedY + mMainComponent->getScreenY()));
+         intX = wrappedX;
+         intY = wrappedY;
+      }
    }
 
    mLastMoveMouseScreenPos = ofVec2f(intX, intY);
@@ -1257,7 +1304,8 @@ void ModularSynth::MouseMoved(int intX, int intY)
 
             if (!mHasAutopatchedToTargetDuringDrag)
             {
-               for (auto* patchCableSource : mMoveModule->GetPatchCableSources())
+               const auto patchCableSources = mMoveModule->GetPatchCableSources();
+               for (auto* patchCableSource : patchCableSources)
                {
                   if (patchCableSource && patchCableSource->GetTarget() == nullptr && module->HasTitleBar())
                   {
@@ -1321,9 +1369,6 @@ void ModularSynth::MouseMoved(int intX, int intY)
 
 void ModularSynth::MouseDragged(int intX, int intY, int button, const juce::MouseInputSource& source)
 {
-   mMousePos.x = intX;
-   mMousePos.y = intY;
-
    float x = GetMouseX(&mModuleContainer);
    float y = GetMouseY(&mModuleContainer);
 
@@ -1332,13 +1377,6 @@ void ModularSynth::MouseDragged(int intX, int intY, int button, const juce::Mous
 
    if (button == 3)
       return;
-
-   for (auto* modal : mModalFocusItemStack)
-   {
-      float x = GetMouseX(modal->GetOwningContainer());
-      float y = GetMouseY(modal->GetOwningContainer());
-      modal->NotifyMouseMoved(x, y);
-   }
 
    if ((GetKeyModifiers() & kModifier_Alt) && !mHasDuplicatedDuringDrag)
    {
@@ -1443,12 +1481,6 @@ void ModularSynth::MouseDragged(int intX, int intY, int button, const juce::Mous
       newHeight = MAX(newHeight, minimumDimensions.y);
       mResizeModule->Resize(newWidth, newHeight);
    }
-
-   mModuleContainer.MouseMoved(x, y);
-
-   x = GetMouseX(&mUILayerModuleContainer);
-   y = GetMouseY(&mUILayerModuleContainer);
-   mUILayerModuleContainer.MouseMoved(x, y);
 }
 
 void ModularSynth::MousePressed(int intX, int intY, int button, const juce::MouseInputSource& source)
@@ -1964,7 +1996,7 @@ void ModularSynth::MouseReleased(int intX, int intY, int button, const juce::Mou
    Prefab::sJustReleasedModule = nullptr;
 }
 
-void ModularSynth::AudioOut(float** output, int bufferSize, int nChannels)
+void ModularSynth::AudioOut(float* const* output, int bufferSize, int nChannels)
 {
    PROFILER(audioOut_total);
 
@@ -2012,50 +2044,52 @@ void ModularSynth::AudioOut(float** output, int bufferSize, int nChannels)
       for (int i = 0; i < mSources.size(); ++i)
          mSources[i]->Process(gTime);
 
+      if (gTime - mLastClapboardTime < 100)
+      {
+         for (int ch = 0; ch < nChannels; ++ch)
+         {
+            for (int i = 0; i < bufferSize; ++i)
+            {
+               float sample = sin(GetPhaseInc(440) * i) * (1 - ((gTime - mLastClapboardTime) / 100));
+               output[ch][i] = sample;
+            }
+         }
+      }
+
       //put it into speakers
-      for (int i = 0; i < nChannels; ++i)
+      for (int ch = 0; ch < nChannels; ++ch)
       {
          if (oversampling == 1)
          {
-            BufferCopy(output[i], mOutputBuffers[i], gBufferSize);
+            BufferCopy(output[ch], mOutputBuffers[ch], gBufferSize);
+            if (ch < 2)
+               mGlobalRecordBuffer->WriteChunk(output[ch], bufferSize, ch);
          }
          else
          {
             for (int sampleIndex = 0; sampleIndex < gBufferSize / oversampling; ++sampleIndex)
             {
-               output[i][sampleIndex] = 0;
-               for (int subsample = 0; subsample < oversampling; ++subsample)
+               output[ch][sampleIndex] = 0;
+               for (int subsampleIndex = 0; subsampleIndex < oversampling; ++subsampleIndex)
                {
-                  output[i][sampleIndex] += mOutputBuffers[i][sampleIndex * oversampling + subsample] / oversampling;
+                  float sample = mOutputBuffers[ch][sampleIndex * oversampling + subsampleIndex];
+                  output[ch][sampleIndex] += sample / oversampling;
+                  if (ch < 2)
+                     mGlobalRecordBuffer->Write(sample, ch);
                }
             }
          }
       }
    }
 
-   if (gTime - mLastClapboardTime < 100)
-   {
-      for (int ch = 0; ch < nChannels; ++ch)
-      {
-         for (int i = 0; i < bufferSize; ++i)
-         {
-            float sample = sin(GetPhaseInc(440) * i) * (1 - ((gTime - mLastClapboardTime) / 100));
-            output[ch][i] = sample;
-         }
-      }
-   }
    /////////// AUDIO PROCESSING ENDS HERE /////////////
-   if (nChannels >= 1)
-      mGlobalRecordBuffer->WriteChunk(output[0], bufferSize, 0);
-   if (nChannels >= 2)
-      mGlobalRecordBuffer->WriteChunk(output[1], bufferSize, 1);
-   mRecordingLength += bufferSize;
+   mRecordingLength += bufferSize * oversampling;
    mRecordingLength = MIN(mRecordingLength, mGlobalRecordBuffer->Size());
 
    Profiler::PrintCounters();
 }
 
-void ModularSynth::AudioIn(const float** input, int bufferSize, int nChannels)
+void ModularSynth::AudioIn(const float* const* input, int bufferSize, int nChannels)
 {
    if (mAudioPaused)
       return;
@@ -2383,7 +2417,6 @@ void ModularSynth::ResetLayout()
    mUserPrefsEditor->SetTypeName("userprefseditor", kModuleCategory_Other);
    mUserPrefsEditor->CreateUIControls();
    mUserPrefsEditor->Init();
-   mUserPrefsEditor->SetPosition(100, 250);
    mUserPrefsEditor->SetShowing(false);
    mModuleContainer.AddModule(mUserPrefsEditor);
    if (mFatalError != "")
@@ -2701,8 +2734,9 @@ void ModularSynth::LogEvent(std::string event, LogEventType type)
 
 IDrawableModule* ModularSynth::DuplicateModule(IDrawableModule* module)
 {
+   juce::MemoryBlock block;
    {
-      FileStreamOut out(ofToDataPath("tmp"));
+      FileStreamOut out(block);
       module->SaveState(out);
    }
 
@@ -2722,7 +2756,7 @@ IDrawableModule* ModularSynth::DuplicateModule(IDrawableModule* module)
    newModule->SetName(module->Name()); //temporarily rename to the same as what we duplicated, so we can load state properly
 
    {
-      FileStreamIn in(ofToDataPath("tmp"));
+      FileStreamIn in(block);
       mIsLoadingModule = true;
       mIsDuplicatingModule = true;
       newModule->LoadState(in, newModule->LoadModuleSaveStateRev(in));
@@ -2819,12 +2853,21 @@ void ModularSynth::SaveState(std::string file, bool autosave)
 
    mAudioThreadMutex.Lock("SaveState()");
 
-   FileStreamOut out(file);
+   //write to a temp file first, so we don't corrupt data if we crash mid-save
+   std::string tmpFilePath = ofToDataPath("tmp");
 
-   mZoomer.WriteCurrentLocation(-1);
-   out << GetLayout().getRawString(true);
-   mModuleContainer.SaveState(out);
-   mUILayerModuleContainer.SaveState(out);
+   {
+      FileStreamOut out(tmpFilePath);
+
+      mZoomer.WriteCurrentLocation(-1);
+      out << GetLayout().getRawString(true);
+      mModuleContainer.SaveState(out);
+      mUILayerModuleContainer.SaveState(out);
+   }
+
+   juce::File writtenFile(tmpFilePath);
+   juce::File targetFile(file);
+   writtenFile.copyFileTo(targetFile);
 
    mAudioThreadMutex.Unlock();
 }
@@ -2949,9 +2992,12 @@ INoteReceiver* ModularSynth::FindNoteReceiver(std::string name, bool fail)
    return n;
 }
 
-void ModularSynth::OnConsoleInput()
+void ModularSynth::OnConsoleInput(std::string command /* = "" */)
 {
-   std::vector<std::string> tokens = ofSplitString(mConsoleText, " ", true, true);
+   if (command.empty())
+      command = mConsoleText;
+   std::vector<std::string> tokens = ofSplitString(command, " ", true, true);
+
    if (tokens.size() > 0)
    {
       if (tokens[0] == "")
@@ -3150,6 +3196,9 @@ IDrawableModule* ModularSynth::SpawnModuleOnTheFly(ModuleFactory::Spawnable spaw
    if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::MidiController)
       moduleType = "midicontroller";
 
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Preset)
+      moduleType = spawnable.mPresetModuleType;
+
    if (name == "")
       name = moduleType;
 
@@ -3188,7 +3237,7 @@ IDrawableModule* ModularSynth::SpawnModuleOnTheFly(ModuleFactory::Spawnable spaw
    {
       EffectChain* effectChain = dynamic_cast<EffectChain*>(module);
       if (effectChain != nullptr)
-         effectChain->AddEffect(spawnable.mLabel, K(onTheFly));
+         effectChain->AddEffect(spawnable.mLabel, spawnable.mLabel, K(onTheFly));
    }
 
    if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Prefab)
@@ -3213,6 +3262,13 @@ IDrawableModule* ModularSynth::SpawnModuleOnTheFly(ModuleFactory::Spawnable spaw
          controller->GetSaveData().SetString("devicein", spawnable.mLabel);
          controller->SetUpFromSaveDataBase();
       }
+   }
+
+   if (spawnable.mSpawnMethod == ModuleFactory::SpawnMethod::Preset)
+   {
+      std::string presetFilePath = ofToDataPath("presets/" + spawnable.mPresetModuleType + "/" + spawnable.mLabel);
+      ModuleSaveDataPanel::LoadPreset(module, presetFilePath);
+      module->SetName(GetUniqueName(juce::String(spawnable.mLabel).replace(".preset", "").toStdString(), modules).c_str());
    }
 
    return module;

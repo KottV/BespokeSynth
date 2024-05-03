@@ -135,7 +135,8 @@ void IUIControl::DrawHover(float x, float y, float w, float h)
 void IUIControl::DrawPatchCableHover()
 {
    if (PatchCable::sActivePatchCable &&
-       (PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_Modulator ||
+       (PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_Pulse ||
+        PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_Modulator ||
         PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_ValueSetter ||
         PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_UIControl ||
         PatchCable::sActivePatchCable->GetConnectionType() == kConnectionType_Grid) &&
@@ -155,6 +156,8 @@ void IUIControl::DrawPatchCableHover()
 bool IUIControl::CanBeTargetedBy(PatchCableSource* source) const
 {
    if (!mCableTargetable)
+      return false;
+   if (GetNoHover())
       return false;
    return source->GetConnectionType() == kConnectionType_Modulator || source->GetConnectionType() == kConnectionType_ValueSetter || source->GetConnectionType() == kConnectionType_UIControl;
 }
@@ -322,4 +325,31 @@ void IUIControl::SetNewManualHoverViaArrow(ofVec2f direction)
          }
       }
    }
+}
+
+//static
+void IUIControl::DestroyCablesTargetingControls(std::vector<IUIControl*> controls)
+{
+   std::vector<IDrawableModule*> modules;
+   TheSynth->GetAllModules(modules);
+   std::vector<PatchCable*> cablesToDestroy;
+   for (const auto module_iter : modules)
+   {
+      for (const auto source : module_iter->GetPatchCableSources())
+      {
+         for (const auto cable : source->GetPatchCables())
+         {
+            for (const auto control : controls)
+            {
+               if (cable->GetTarget() == control)
+               {
+                  cablesToDestroy.push_back(cable);
+                  break;
+               }
+            }
+         }
+      }
+   }
+   for (const auto cable : cablesToDestroy)
+      cable->Destroy(false);
 }

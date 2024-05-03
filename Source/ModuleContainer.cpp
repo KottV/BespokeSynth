@@ -59,7 +59,15 @@ void ModuleContainer::GetAllModules(std::vector<IDrawableModule*>& out)
    }
 }
 
-void ModuleContainer::Draw()
+void ModuleContainer::DrawContents()
+{
+   DrawPatchCables(!K(parentMinimized), !K(inFront));
+   DrawModules();
+   DrawPatchCables(!K(parentMinimized), K(inFront));
+   DrawUnclipped();
+}
+
+void ModuleContainer::DrawModules()
 {
    for (int i = (int)mModules.size() - 1; i >= 0; --i)
    {
@@ -95,16 +103,16 @@ void ModuleContainer::PostRender()
       mModules[i]->PostRender();
 }
 
-void ModuleContainer::DrawPatchCables(bool parentMinimized)
+void ModuleContainer::DrawPatchCables(bool parentMinimized, bool inFront)
 {
    if (mOwner != nullptr && mOwner->Minimized())
       parentMinimized = true;
 
    for (int i = (int)mModules.size() - 1; i >= 0; --i)
    {
-      mModules[i]->DrawPatchCables(parentMinimized);
+      mModules[i]->DrawPatchCables(parentMinimized, inFront);
       if (mModules[i]->GetContainer())
-         mModules[i]->GetContainer()->DrawPatchCables(parentMinimized);
+         mModules[i]->GetContainer()->DrawPatchCables(parentMinimized, inFront);
    }
 }
 
@@ -355,29 +363,8 @@ void ModuleContainer::DeleteModule(IDrawableModule* module, bool fail /*= true*/
       }
    }
 
-   // Remove all cables that targetted control on this module
-   std::vector<IDrawableModule*> modules;
-   TheSynth->GetAllModules(modules);
-   std::vector<PatchCable*> cablesToDestroy;
-   for (const auto module_iter : modules)
-   {
-      for (const auto source : module_iter->GetPatchCableSources())
-      {
-         for (const auto cable : source->GetPatchCables())
-         {
-            for (const auto control : module->GetUIControls())
-            {
-               if (cable->GetTarget() == control)
-               {
-                  cablesToDestroy.push_back(cable);
-                  break;
-               }
-            }
-         }
-      }
-   }
-   for (const auto cable : cablesToDestroy)
-      cable->Destroy(false);
+   // Remove all cables that targeted controls on this module
+   IUIControl::DestroyCablesTargetingControls(module->GetUIControls());
 
    for (const auto child : module->GetChildren())
    {
@@ -391,6 +378,30 @@ void ModuleContainer::DeleteModule(IDrawableModule* module, bool fail /*= true*/
    module->SetEnabled(false);
    module->Exit();
    TheSynth->OnModuleDeleted(module);
+}
+
+void ModuleContainer::DeleteCablesForControl(const IUIControl* control)
+{
+   // Remove all cables that targetted control on this module
+   std::vector<IDrawableModule*> modules;
+   TheSynth->GetAllModules(modules);
+   std::vector<PatchCable*> cablesToDestroy;
+   for (const auto module_iter : modules)
+   {
+      for (const auto source : module_iter->GetPatchCableSources())
+      {
+         for (const auto cable : source->GetPatchCables())
+         {
+            if (cable->GetTarget() == control)
+            {
+               cablesToDestroy.push_back(cable);
+               break;
+            }
+         }
+      }
+   }
+   for (const auto cable : cablesToDestroy)
+      cable->Destroy(false);
 }
 
 IDrawableModule* ModuleContainer::FindModule(std::string name, bool fail)
@@ -424,7 +435,7 @@ IDrawableModule* ModuleContainer::FindModule(std::string name, bool fail)
          IDrawableModule* child = nullptr;
          try
          {
-            child = mModules[i]->FindChild(tokens[1].c_str());
+            child = mModules[i]->FindChild(tokens[1].c_str(), fail);
          }
          catch (UnknownModuleException& e)
          {

@@ -598,6 +598,61 @@ void VSTPlugin::Poll()
          //   mWindowOverlay = new NSWindowOverlay(mWindow->GetNSViewComponent()->getView());
       }
    }
+
+   if (mPresetFileUpdateQueued)
+   {
+      mPresetFileUpdateQueued = false;
+      if (mPresetFileIndex >= 0 && mPresetFileIndex < (int)mPresetFilePaths.size())
+      {
+         File resourceFile = File(mPresetFilePaths[mPresetFileIndex]);
+
+         if (!resourceFile.existsAsFile())
+         {
+            DBG("File doesn't exist ...");
+            return;
+         }
+
+         std::unique_ptr<FileInputStream> input(resourceFile.createInputStream());
+
+         if (!input->openedOk())
+         {
+            DBG("Failed to open file");
+            return;
+         }
+
+         int rev = input->readInt();
+
+         int64 vstStateSize = input->readInt64();
+         char* vstState = new char[vstStateSize];
+         input->read(vstState, vstStateSize);
+         mPlugin->setStateInformation(vstState, vstStateSize);
+
+         int64 vstProgramStateSize = input->readInt64();
+         if (vstProgramStateSize > 0)
+         {
+            char* vstProgramState = new char[vstProgramStateSize];
+            input->read(vstProgramState, vstProgramStateSize);
+            mPlugin->setCurrentProgramStateInformation(vstProgramState, vstProgramStateSize);
+         }
+
+         if (rev >= 2 && mModuleSaveData.GetBool("preset_file_sets_params"))
+         {
+            int numParamsShowing = input->readInt();
+            for (auto& param : mParameterSliders)
+               param.mShowing = false;
+            for (int i = 0; i < numParamsShowing; ++i)
+            {
+               int index = input->readInt();
+               if (index < mParameterSliders.size())
+               {
+                  mParameterSliders[index].mShowing = true;
+                  if (mParameterSliders[index].mSlider == nullptr)
+                     mParameterSliders[index].MakeSlider();
+               }
+            }
+         }
+      }
+   }
 }
 void VSTPlugin::audioProcessorChanged(juce::AudioProcessor* processor, const ChangeDetails& details)
 {
@@ -678,19 +733,19 @@ void VSTPlugin::Process(double time)
             if (mUseVoiceAsChannel == false)
                channel = mChannel;
 
-            float bend = mod.mModulation.pitchBend ? mod.mModulation.pitchBend->GetValue(0) : 0;
+            float bend = mod.mModulation.pitchBend ? mod.mModulation.pitchBend->GetValue(0) : ModulationParameters::kDefaultPitchBend;
             if (bend != mod.mLastPitchBend)
             {
                mod.mLastPitchBend = bend;
                mMidiBuffer.addEvent(juce::MidiMessage::pitchWheel(channel, (int)ofMap(bend, -mPitchBendRange, mPitchBendRange, 0, 16383, K(clamp))), 0);
             }
-            float modWheel = mod.mModulation.modWheel ? mod.mModulation.modWheel->GetValue(0) : 0;
+            float modWheel = mod.mModulation.modWheel ? mod.mModulation.modWheel->GetValue(0) : ModulationParameters::kDefaultModWheel;
             if (modWheel != mod.mLastModWheel)
             {
                mod.mLastModWheel = modWheel;
                mMidiBuffer.addEvent(juce::MidiMessage::controllerEvent(channel, mModwheelCC, ofClamp(modWheel * 127, 0, 127)), 0);
             }
-            float pressure = mod.mModulation.pressure ? mod.mModulation.pressure->GetValue(0) : 0;
+            float pressure = mod.mModulation.pressure ? mod.mModulation.pressure->GetValue(0) : ModulationParameters::kDefaultPressure;
             if (pressure != mod.mLastPressure)
             {
                mod.mLastPressure = pressure;
@@ -954,58 +1009,7 @@ std::vector<IUIControl*> VSTPlugin::ControlsToIgnoreInSaveState() const
 void VSTPlugin::DropdownUpdated(DropdownList* list, int oldVal, double time)
 {
    if (list == mPresetFileSelector)
-   {
-      if (mPresetFileIndex >= 0 && mPresetFileIndex < (int)mPresetFilePaths.size())
-      {
-         File resourceFile = File(mPresetFilePaths[mPresetFileIndex]);
-
-         if (!resourceFile.existsAsFile())
-         {
-            DBG("File doesn't exist ...");
-            return;
-         }
-
-         std::unique_ptr<FileInputStream> input(resourceFile.createInputStream());
-
-         if (!input->openedOk())
-         {
-            DBG("Failed to open file");
-            return;
-         }
-
-         int rev = input->readInt();
-
-         int64 vstStateSize = input->readInt64();
-         char* vstState = new char[vstStateSize];
-         input->read(vstState, vstStateSize);
-         mPlugin->setStateInformation(vstState, vstStateSize);
-
-         int64 vstProgramStateSize = input->readInt64();
-         if (vstProgramStateSize > 0)
-         {
-            char* vstProgramState = new char[vstProgramStateSize];
-            input->read(vstProgramState, vstProgramStateSize);
-            mPlugin->setCurrentProgramStateInformation(vstProgramState, vstProgramStateSize);
-         }
-
-         if (rev >= 2 && mModuleSaveData.GetBool("preset_file_sets_params"))
-         {
-            int numParamsShowing = input->readInt();
-            for (auto& param : mParameterSliders)
-               param.mShowing = false;
-            for (int i = 0; i < numParamsShowing; ++i)
-            {
-               int index = input->readInt();
-               if (index < mParameterSliders.size())
-               {
-                  mParameterSliders[index].mShowing = true;
-                  if (mParameterSliders[index].mSlider == nullptr)
-                     mParameterSliders[index].MakeSlider();
-               }
-            }
-         }
-      }
-   }
+      mPresetFileUpdateQueued = true;
 
    if (list == mShowParameterDropdown)
    {

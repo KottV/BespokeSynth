@@ -26,6 +26,8 @@
 */
 
 #include "Prefab.h"
+
+#include "Checkbox.h"
 #include "ModularSynth.h"
 #include "PatchCableSource.h"
 
@@ -172,7 +174,7 @@ void Prefab::DrawModule()
    mDisbandButton->Draw();
    DrawTextNormal("remove", 18, 14);
 
-   mModuleContainer.Draw();
+   mModuleContainer.DrawModules();
 }
 
 void Prefab::DrawModuleUnclipped()
@@ -246,6 +248,17 @@ void Prefab::ButtonClicked(ClickButton* button, double time)
       for (auto* module : modules)
          GetOwningContainer()->TakeModule(module);
       GetOwningContainer()->DeleteModule(this);
+   }
+}
+
+void Prefab::CheckboxUpdated(Checkbox* checkbox, double time)
+{
+   if (checkbox == mEnabledCheckbox)
+   {
+      for (auto& module : mModuleContainer.GetModules())
+      {
+         module->SetEnabled(mEnabled);
+      }
    }
 }
 

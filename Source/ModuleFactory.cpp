@@ -259,8 +259,16 @@
 #include "PulseFlag.h"
 #include "PulseDisplayer.h"
 #include "BufferShuffler.h"
+#include "PitchToValue.h"
+#include "RhythmSequencer.h"
+#include "DotSequencer.h"
+#include "VoiceSetter.h"
+#include "LabelDisplay.h"
+#include "ControlRecorder.h"
 
 #include <juce_core/juce_core.h>
+
+#include "PulseRouter.h"
 
 #define REGISTER(class, name, type) Register(#name, &(class ::Create), &(class ::CanCreate), type, false, false, class ::AcceptsAudio(), class ::AcceptsNotes(), class ::AcceptsPulses());
 #define REGISTER_HIDDEN(class, name, type) Register(#name, &(class ::Create), &(class ::CanCreate), type, true, false, class ::AcceptsAudio(), class ::AcceptsNotes(), class ::AcceptsPulses());
@@ -326,6 +334,7 @@ ModuleFactory::ModuleFactory()
    REGISTER(NoteFlusher, noteflusher, kModuleCategory_Note);
    REGISTER(NoteCanvas, notecanvas, kModuleCategory_Instrument);
    REGISTER(CommentDisplay, comment, kModuleCategory_Other);
+   REGISTER(LabelDisplay, label, kModuleCategory_Other);
    REGISTER(StutterControl, stutter, kModuleCategory_Audio);
    REGISTER(CircleSequencer, circlesequencer, kModuleCategory_Instrument);
    REGISTER(MidiOutputModule, midioutput, kModuleCategory_Note);
@@ -335,6 +344,7 @@ ModuleFactory::ModuleFactory()
    REGISTER(ControlSequencer, controlsequencer, kModuleCategory_Modulator);
    REGISTER(PitchSetter, pitchsetter, kModuleCategory_Note);
    REGISTER(NoteFilter, notefilter, kModuleCategory_Note);
+   REGISTER(PulseRouter, pulserouter, kModuleCategory_Pulse);
    REGISTER(RandomNoteGenerator, randomnote, kModuleCategory_Instrument);
    REGISTER(NoteToFreq, notetofreq, kModuleCategory_Modulator);
    REGISTER(MacroSlider, macroslider, kModuleCategory_Modulator);
@@ -465,6 +475,10 @@ ModuleFactory::ModuleFactory()
    REGISTER(PulseFlag, pulseflag, kModuleCategory_Pulse);
    REGISTER(PulseDisplayer, pulsedisplayer, kModuleCategory_Pulse);
    REGISTER(BufferShuffler, buffershuffler, kModuleCategory_Audio);
+   REGISTER(PitchToValue, pitchtovalue, kModuleCategory_Modulator);
+   REGISTER(RhythmSequencer, rhythmsequencer, kModuleCategory_Note);
+   REGISTER(DotSequencer, dotsequencer, kModuleCategory_Instrument);
+   REGISTER(VoiceSetter, voicesetter, kModuleCategory_Note);
 
    //REGISTER_EXPERIMENTAL(MidiPlayer, midiplayer, kModuleCategory_Instrument);
    REGISTER_HIDDEN(Autotalent, autotalent, kModuleCategory_Audio);
@@ -662,10 +676,15 @@ std::vector<ModuleFactory::Spawnable> ModuleFactory::GetSpawnableModules(std::st
       }
    }
 
-   if (continuousString)
-      sort(modules.begin(), modules.end(), Spawnable::CompareLength);
-   else
-      sort(modules.begin(), modules.end(), Spawnable::CompareAlphabetical);
+   std::vector<Spawnable> presets;
+   ModuleFactory::GetPresets(presets);
+   for (auto preset : presets)
+   {
+      if (CheckHeldKeysMatch(preset.mLabel, keys, continuousString) || keys[0] == ';')
+         modules.push_back(preset);
+   }
+
+   sort(modules.begin(), modules.end(), Spawnable::CompareAlphabetical);
 
    std::vector<ModuleFactory::Spawnable> ret;
    for (size_t i = 0; i < modules.size(); ++i)
@@ -699,6 +718,8 @@ ModuleCategory ModuleFactory::GetModuleCategory(Spawnable spawnable)
       return kModuleCategory_Audio;
    if (spawnable.mSpawnMethod == SpawnMethod::Prefab)
       return kModuleCategory_Other;
+   if (spawnable.mSpawnMethod == SpawnMethod::Preset)
+      return mFactoryMap[spawnable.mPresetModuleType].mCategory;
    return kModuleCategory_Other;
 }
 
@@ -737,6 +758,33 @@ void ModuleFactory::GetPrefabs(std::vector<ModuleFactory::Spawnable>& prefabs)
 }
 
 //static
+void ModuleFactory::GetPresets(std::vector<ModuleFactory::Spawnable>& presets)
+{
+   using namespace juce;
+   File dir(ofToDataPath("presets"));
+   Array<File> directories;
+   dir.findChildFiles(directories, File::findDirectories, false);
+   for (auto moduleDir : directories)
+   {
+      std::string moduleTypeName = moduleDir.getFileName().toStdString();
+      Array<File> files;
+      moduleDir.findChildFiles(files, File::findFiles, false);
+      for (auto file : files)
+      {
+         if (file.getFileExtension() == ".preset")
+         {
+            ModuleFactory::Spawnable spawnable;
+            spawnable.mLabel = file.getFileName().toStdString();
+            spawnable.mDecorator = "[" + moduleTypeName + "]";
+            spawnable.mPresetModuleType = moduleTypeName;
+            spawnable.mSpawnMethod = SpawnMethod::Preset;
+            presets.push_back(spawnable);
+         }
+      }
+   }
+}
+
+//static
 std::string ModuleFactory::FixUpTypeName(std::string name)
 {
    if (name == "siggen")
@@ -753,6 +801,9 @@ std::string ModuleFactory::FixUpTypeName(std::string name)
 
    if (name == "presets")
       return "snapshots";
+
+   if (name == "arpsequencer")
+      return "rhythmsequencer";
 
    return name;
 }
